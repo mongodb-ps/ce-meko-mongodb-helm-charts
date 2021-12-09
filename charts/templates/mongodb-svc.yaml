@@ -1,0 +1,31 @@
+
+{{- if .Values.extAccess.enabled }}
+{{- $app := .Values.replicaSetName -}}
+{{- $exposeMethod := .Values.extAccess.exposeMethod }}
+{{- $namespace := .Release.Namespace -}}
+{{ range $index, $value := .Values.extAccess.ports }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $app }}-{{$index}}-svc
+  namespace: {{ $namespace }}
+spec:
+  {{- if eq ( $exposeMethod | lower) "nodeport" }}
+  clusterIP: {{ $value.clusterIP }}
+  {{- end }}
+  externalTrafficPolicy: Cluster
+  ports:
+  - port: 27017
+    protocol: TCP
+    targetPort: 27017
+    {{- if eq ( $exposeMethod | lower) "nodeport" }}
+    nodePort: {{ $value.port }}
+    {{- end }}
+  selector:
+    app: {{ $app }}-svc
+    statefulset.kubernetes.io/pod-name: {{ $app }}-{{$index}}
+  sessionAffinity: None
+  type: {{ $exposeMethod }}
+{{- end }}
+{{- end }}

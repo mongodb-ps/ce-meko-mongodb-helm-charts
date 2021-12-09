@@ -1,0 +1,120 @@
+---
+apiVersion: mongodb.com/v1
+kind: MongoDB
+metadata:
+  name: {{ .Values.replicaSetName }}
+spec:
+  members: {{ .Values.replicas }}
+  version: {{ .Values.mongoDBVersion | quote }}
+  featureCompatibilityVersion: {{ .Values.mongoDBFCV | default "4.4" | quote }}
+  opsManager:
+    configMapRef:
+      name: project-{{ .Values.opsManager.projectName | lower }}
+  credentials: {{ .Values.opsManager.omSecret }}
+  type: ReplicaSet
+  persistent: true
+  podSpec:
+    podTemplate:
+      spec:
+        initContainers:
+          - name: mongodb-enterprise-init-database
+        containers:
+          - name: mongodb-enterprise-database
+            resources:
+              limits:
+                cpu: {{ .Values.resources.limits.cpu }}
+                memory: {{ .Values.resources.limits.mem }}
+              requests:
+                cpu: {{ .Values.resources.requests.cpu }}
+                memory: {{ .Values.resources.requests.mem }}
+    podAntiAffinityTopologyKey: "kubernetes.io/hostname"
+    persistence:
+      {{- if eq (.Values.storage.persistenceType | lower) "single"}}
+      single:
+        storage: {{ .Values.storage.single.size }}
+        storageClass: {{ .Values.storage.single.storageClass }}
+      {{- else }}
+      multiple:
+        data:
+          storage: {{ .Values.storage.multi.data.size }}
+          storageClass: {{ .Values.storage.multi.data.storageClass }}
+        journal:
+          storage: {{ .Values.storage.multi.journal.size }}
+          storageClass: {{ .Values.storage.multi.journal.storageClass }}
+        logs:
+          storage: {{ .Values.storage.multi.logs.size }}
+          storageClass: {{ .Values.storage.multi.logs.storageClass }}
+      {{- end }}
+  agent:
+    startupOptions:
+      logLevel: {{ .Values.logLevel }}
+      enableLocalConfigurationServer: "true"
+      {{- if .Values.opsManager.tlsEnabled }}
+      httpsCAFile: /mongodb-automation/ca.pem
+      tlsMMSServerClientCertificate: /mongodb-automation/server.pem
+      {{- end }}
+  security:
+    authentication:
+      enabled: true
+      modes: 
+      {{- if .Values.auth.scram.enabled }}
+        - SCRAM
+      {{- end }}
+      {{- if .Values.auth.ldap.enabled }}
+        - LDAP
+      ldap:
+        servers:
+        {{- range .Values.auth.ldap.servers }}
+          - {{ . }}
+        {{- end }}
+        transportSecurity: {{ if .Values.auth.ldap.ldaps }}tls{{ end }}
+        caConfigMapRef:
+          name: {{ .Values.auth.ldap.caConfigMap }}
+          key: ca-pem
+        bindQueryUser: {{ .Values.auth.ldap.bindUserDN }}
+        bindQueryPasswordSecretRef:
+          name: {{ .Values.auth.ldap.bindUserSecret }}
+        userToDNMapping: {{ .Values.auth.ldap.userToDNMapping | quote}}
+        authzQueryTemplate: {{ .Values.auth.ldap.authzQueryTemplate | quote }}
+      {{- end }}
+    {{- if .Values.tls.enabled }}
+      internalCluster: "X509"
+      agents:
+        mode: SCRAM
+    tls:
+      enabled: true
+      ca: {{ .Values.tls.caConfigMap }}
+      secretRef:
+        secretRef:
+          name: {{ .Values.opsManager.projectName | lower }}
+    {{- end }}
+  {{ if and .Values.extAccess.enabled .Values.tls.enabled -}}
+  connectivity:
+    replicaSetHorizons:
+      {{- range .Values.extAccess.ports }}
+      - "external": "{{ .horizonName }}:{{ .port }}"
+      {{- end }}
+  {{ end -}}
+  additionalMongodConfig:
+    {{- if .Values.tls.enabled }}
+    net:
+      tls:
+        mode: requireTLS
+        disabledProtocols: TLS1_0,TLS1_1
+    setParameter:
+      suppressNoTLSPeerCertificateWarning: true
+    {{- end }}
+    syslog:
+      {{- if eq (.Values.logLevel | upper) "DEBUG" }}
+      verbosity: 2
+      {{- end }}
+      timeStampFormat: iso8601-local
+    {{- if .Values.kmip.enabled }}
+    security:
+      enableEncryption: true
+      kmip:
+        serverName: {{ .Values.kmip.host }}
+        port: {{ .Values.kmip.port }}
+        clientCertificateFile: /mongodb-automation/server.pem
+        serverCAFile: /mongodb-automation/ca.pem
+    {{- end }}

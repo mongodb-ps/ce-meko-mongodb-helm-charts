@@ -1,0 +1,55 @@
+---
+
+replicaSetName: rs-0
+
+mongoDBVersion: 4.4.8-ent
+
+replicas: 3
+
+logLevel: DEBUG
+
+opsManager:
+  tlsEnabled: true
+  baseUrl: https://mongod0.mongodb.local:8443
+  orgId: 5e439737e976cc5e50a7b13d
+  projectName: CRAP
+  tokenSecret: mms-dev-token
+  caConfigmap: om-ca-cert
+
+resources:
+  limits:
+    cpu: 2
+    mem: 4Gi
+  requests:
+    cpu: 1
+    mem: 4Gi
+
+storage:
+  size: 5Gi
+  storageClass: data
+  manageStorage: true
+  pvSize: 10Gi
+  hostPath: /data/db/data
+  workerNodes:
+  - mongod3
+  - mongod4
+  - mongod5
+  - mongod6
+  - mongod7
+
+tls:
+  enabled: true
+  caConfigMap: custom-ca
+
+horizon:
+  enabled: false
+  nodePortStartValue: 30000
+  nodePortHost: mongod3.mongodb.local
+  clusterIPStartValue: '10.43.101.0'
+
+rootSecret: mongodb-dev-adm
+
+kmip:
+  enabled: false
+  host: kmip-svc.mongodb.svc.cluster.local
+  port: 5696

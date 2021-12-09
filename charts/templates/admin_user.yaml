@@ -1,0 +1,16 @@
+---
+apiVersion: mongodb.com/v1
+kind: MongoDBUser
+metadata:
+  name: {{ list .Values.replicaSetName "root" | join "-" | quote }} 
+spec:
+  passwordSecretKeyRef:
+    name: {{ .Values.rootSecret }}
+    key: password
+  username: {{ list .Values.replicaSetName "root" | join "-" | quote }} 
+  db: "admin"
+  mongodbResourceRef:
+    name: {{ .Values.replicaSetName | quote }}
+  roles:
+    - db: "admin"
+      name: "root"

@@ -1,0 +1,81 @@
+---
+
+replicaSetName: rs-0
+
+mongoDBVersion: 4.4.10-ent
+
+replicas: 3
+
+logLevel: DEBUG
+
+auth:
+  scram:
+    enabled: true
+  ldap:
+    enabled: true
+    servers:
+      - ad0.mongodb.local
+    ldaps: true
+    caConfigMap: custom-ca
+    bindUserDN: 'CN=ldap-bind-user,CN=Users,DC=mongodb,DC=local'
+    bindUserSecret: binduserpasswd
+    authzQueryTemplate: '{USER}?memberOf?base'
+    userToDNMapping: '[{ match: "(.+)@MONGODB.LOCAL", substitution: "cn={0},cn=Users,dc=mongodb,dc=local"}]'
+
+opsManager:
+  tlsEnabled: true
+  baseUrl: https://mongod0.mongodb.local:8443
+  orgId: 5e439737e976cc5e50a7b13d
+  projectName: K8S-DEV
+  omSecret: organization-secret
+  caConfigmap: om-ca-cert
+
+resources:
+  limits:
+    cpu: 2
+    mem: 4Gi
+  requests:
+    cpu: 1
+    mem: 4Gi
+
+storage:
+  persistenceType: single
+  single:
+    size: 5Gi
+    storageClass: data
+  multi:
+    data:
+      size: 5Gi
+      storageClass: dataClass
+    journal:
+      size: 5Gi
+      storageClass: journalClass
+    logs:
+      size: 5Gi
+      storageClass: logClass
+
+tls:
+  enabled: true
+  caConfigMap: custom-ca
+
+extAccess:
+  enabled: true
+  exposeMethod: NodePort
+  nodePortSelectRandom: true
+  ports:
+    - horizonName: "mongod3.mongodb.local"
+      port: 31250
+      clusterIP: 10.43.125.20
+    - horizonName: "mongod3.mongodb.local"
+      port: 31251
+      clusterIP: 10.43.125.21
+    - horizonName: "mongod3.mongodb.local"
+      port: 31252
+      clusterIP: 10.43.125.22
+
+rootSecret: dev-adm-passwd
+
+kmip:
+  enabled: false
+  host: kmip-svc.mongodb.svc.cluster.local
+  port: 5696

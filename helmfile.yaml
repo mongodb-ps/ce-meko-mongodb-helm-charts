@@ -1,0 +1,10 @@
+---
+helmDefaults:
+  tillerless: true
+  wait: false
+releases:
+  - name: {{ requiredEnv "ENV" }}-mongodb
+    namespace: {{ requiredEnv "NS" }}
+    chart: ./charts
+    values:
+    - ./charts/values/{{ requiredEnv "ENV" }}/values.yaml
