@@ -1,0 +1,61 @@
+---
+
+replicaSetName: oplogStore0
+
+mongoDBVersion: 4.4.10-ent
+
+replicas: 3
+
+logLevel: DEBUG
+
+auth:
+  scram:
+    enabled: true
+  ldap:
+    enabled: false
+
+opsManager:
+  tlsEnabled: true
+  baseUrl: https://mongod0.mongodb.local:8443
+  orgId: 5e439737e976cc5e50a7b13d
+  projectName: oplogStore
+  omSecret: organization-secret
+  caConfigmap: om-ca-cert
+
+resources:
+  limits:
+    cpu: 2
+    mem: 4Gi
+  requests:
+    cpu: 1
+    mem: 4Gi
+
+storage:
+  persistenceType: single
+  single:
+    size: 5Gi
+    storageClass: data
+  multi:
+    data:
+      size: 5Gi
+      storageClass: dataClass
+    journal:
+      size: 5Gi
+      storageClass: journalClass
+    logs:
+      size: 5Gi
+      storageClass: logClass
+
+tls:
+  enabled: true
+  caConfigMap: custom-ca
+
+extAccess:
+  enabled: false
+
+rootSecret: dev-adm-passwd
+
+kmip:
+  enabled: false
+  host: kmip-svc.mongodb.svc.cluster.local
+  port: 5696
