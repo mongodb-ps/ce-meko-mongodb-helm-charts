@@ -17,10 +17,20 @@
     - [MongoDB First User _REQUIRED_](#mongodb-first-user-required)
   - [External Access, Services and Horizons](#external-access-services-and-horizons)
   - [Encryption At Rest](#encryption-at-rest)
+  - [LDAP Authentication and Authorisation](#ldap-authentication-and-authorisation)
   - [Set Up](#set-up)
     - [replicaSetName](#replicasetname)
     - [mongoDBVersion](#mongodbversion)
     - [logLevel](#loglevel)
+    - [auth.scram.enabled](#authscramenabled)
+    - [auth.ldap.enabled](#authldapenabled)
+    - [auth.ldap.servers](#authldapservers)
+    - [auth.ldap.ldaps](#authldapldaps)
+    - [auth.ldap.caConfigMap](#authldapcaconfigmap)
+    - [auth.ldap.bindUserDN](#authldapbinduserdn)
+    - [auth.ldap.bindUserSecret](#authldapbindusersecret)
+    - [auth.ldap.userToDNMapping](#authldapusertodnmapping)
+    - [auth.ldap.authzQueryTemplate](#authldapauthzquerytemplate)
     - [opsManager.tlsEnabled](#opsmanagertlsenabled)
     - [opsManager.baseUrl](#opsmanagerbaseurl)
     - [opsManager.orgId](#opsmanagerorgid)
@@ -31,18 +41,23 @@
     - [resources.limits.mem](#resourceslimitsmem)
     - [resources.requests.cpu](#resourcesrequestscpu)
     - [resources.requests.mem](#resourcesrequestsmem)
-    - [storage.size](#storagesize)
-    - [storage.storageClass](#storagestorageclass)
-    - [storage.manageStorage](#storagemanagestorage)
-    - [storage.pvSize](#storagepvsize)
-    - [storage.hostPath](#storagehostpath)
-    - [storage.workerNodes](#storageworkernodes)
+    - [storage.persistenceType](#storagepersistencetype)
+    - [storage.single.size](#storagesinglesize)
+    - [storage.single.storageClass](#storagesinglestorageclass)
+    - [storage.multi.data.size](#storagemultidatasize)
+    - [storage.multi.data.storageClass](#storagemultidatastorageclass)
+    - [storage.multi.journal.size](#storagemultijournalsize)
+    - [storage.multi.journal.storageClass](#storagemultijournalstorageclass)
+    - [storage.multi.logs.size](#storagemultilogssize)
+    - [storage.multi.logs.storageClass](#storagemultilogsstorageclass)
     - [tlsEnabled.enabled](#tlsenabledenabled)
     - [tlsEnabled.caConfigMap](#tlsenabledcaconfigmap)
-    - [horizon.enabled](#horizonenabled)
-    - [horizon.nodePortHost](#horizonnodeporthost)
-    - [horizon.nodePortStartValue](#horizonnodeportstartvalue)
-    - [horizon.clusterIPStartValue](#horizonclusteripstartvalue)
+    - [extAccess.enabled](#extaccessenabled)
+    - [extAccess.exposeMethod](#extaccessexposemethod)
+    - [extAccess.ports](#extaccessports)
+    - [extAccess.ports[n].horizonName](#extaccessportsnhorizonname)
+    - [extAccess.ports[n].port](#extaccessportsnport)
+    - [extAccess.ports[n].clusterIP](#extaccessportsnclusterip)
     - [rootSecret](#rootsecret)
     - [kmip.enabled](#kmipenabled)
     - [kmip.host](#kmiphost)
@@ -169,21 +184,21 @@ The name of the user that is created has the pattern of **ap-\<replicaSetName\>-
 
 ## External Access, Services and Horizons
 
-If external access (e.g. access from external to Kubernetes) is required a NodePort service is created for each replica set member and a MongoDB Split Horizon associated with each replica set member. The MongoDB Split Horizon provides a different view of the cluster when `isMaster` is exeecuted depending on the address used in the connection string. This allows the discovery process to present the addresses of the replica set members as they should be viewed external to Kubernetes.
+If external access (e.g. access from external to Kubernetes) is required a NodePort or LoadBalancer service can be created for each replica set member and a MongoDB Split Horizon associated with each replica set member. The MongoDB Split Horizon provides a different view of the cluster when `isMaster` is exeecuted depending on the address used in the connection string. This allows the discovery process to present the addresses of the replica set members as they should be viewed external to Kubernetes.
 
-A Kubernetes worker node or other address that is resolved to a worker needs (or load balancer) to be allocated as the `horizons.nodePortHost` value along with a starting port number, `horizons.nodePortStartValue`, which will be automatically incremented for every member of the replica set, e.g. starting at 30000, the second member of the replica set will be given the external port number of 30001. The service will also be allocated an IP address internal to Kubernetes, the starting IP address needs to be set as the `horizon.clusterIPStartValue` value. This addressed will be incremented by one for each subsequent pod in the replica set. There is no fancy checks to determine if the addresses are valid. The address range must be a valid address range for services in Kuberenetes and cannot be used anywhere else in the Kubernetes cluster.
+For a NodePort service, a Kubernetes worker node, or an address that is resolved to a worker node, needs to be allocated as the `extAccess.ports[].horizonName` value along with an associated port for each horizon, `extAccess.ports[].port`. The service will also be allocated an IP address internal to Kubernetes for each NodePort, the IP address is set via the `extAccess.ports[].clusterIP` value. There is no fancy checks to determine if the addresses are valid. The address range must be a valid address range for services in Kuberenetes and cannot be used anywhere else in the Kubernetes cluster. For LoadBalancer service type, the `extAccess.ports[].horizonName` value along with an associated port for each horizon, `extAccess.ports[].port`, are still required, but the port is the port of the load balancer and not the NodePort
 
-In most Kubernetes environments the port range is 30000 to 32767. The port numbers cannot overlap with port numbers already in use in any deployment of any kind in the Kubernetes cluster.
+In most Kubernetes environments the NodePort port range is 30000 to 32767. The port numbers cannot overlap with port numbers already in use in any deployment of any kind in the Kubernetes cluster.
 
 To access from external to Kubernetes the connection string for a three-member replica set would look similar to:
 
 ```shell
-mongodb://<nodePortHost>:<nodePortStartValue + 0>,<nodePortHost>:<nodePortStartValue + 1>,<nodePortHost>:<nodePortStartValue + 2>/?replicaSet=<replicaSetName>
+mongodb://<horizonName-0>:<port-0>,<horizonName-1>:<port-1>,<horizonName-2>:<port-2>/?replicaSet=<replicaSetName>
 ```
 
 e.g.
 ```shell
-mongodb://workernode5.mongodb.local:30000,workernode5.mongodb.local:30001,workernode5.mongodb.local:30002/?replicaSet=ap-mongodb-dev
+mongodb://workernode5.mongodb.local:30000,workernode5.mongodb.local:30011,workernode5.mongodb.local:32002/?replicaSet=ap-mongodb-dev
 ```
 
 ## Encryption At Rest
@@ -193,6 +208,38 @@ If encryption at rest is required the `kmp.enabled` value in the relevant `value
 Ensure to set the FQDN (`kmip.host`) and port (`kmip.port`) of the KMIP device/service.
 
 The pod's X.509 PEM file can CA certificate will be used for authentication to the KMIP device/service.
+
+## LDAP Authentication and Authorisation
+
+If LDAP authentication and authorisation is required the `auth.ldap.enabled` must be set to `true`. MongoDB highly recommends that `ldaps` is used to protect the credentials of users, therefore `auth.ldap.ldaps` should also be `true`.
+
+A bind user must be provided and a secret created for their password, the key within the secret must be `password`. The following is an example to create the secret:
+
+```shell
+kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret generic <name-of-secret> \
+  --from-literal=password=<password>
+```
+
+If LDAPS is selected the CA certificate used with the LDAP servers must be provided within a configmap. The name of the key within the configmap **MUST** be `ca-pem`. This can be achieved by:
+
+```shell
+kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create configmap <name-of-configmap> \
+  --from-file=ca-pem
+```
+
+To map from the username used by the MongoDB user to the Distingiushed Name (DN) within LDAP a mapping query must be provided. MongoDB Professional Services can assist with this, but the following is an example of the query for a user that logs on a USER@MONGODB.LOCAL but their DN is actually `cn=USER,cn=Users,dc=mongodb,dc=local`:
+
+```shell
+'[{ match: "(.+)@MONGODB.LOCAL", substitution: "cn={0},cn=Users,dc=mongodb,dc=local"}]'
+```
+
+If LDAP authorisation is desired query must be provided to determine the groups of the user. In the following example the user's groups are held in the `memberOf` LDAP attribute of the user:
+
+```shell
+'{USER}?memberOf?base'
+```
+
+If LDAP authorisation is not required this setting can be skipped.
 
 ## Set Up
 
@@ -208,6 +255,15 @@ The following table describes the values required in the relevant `values.yaml`:
 |mongoDBVersion|The version of MongoDB to installed, such as `4.4.8-ent` for MognoDB Enterprise 4.4.8|
 |replicas|Number of members in the replica set (integer)|
 |logLevel|Level of logging for MongoDB and agents, INFO or DEBUG|
+|auth.scram.enabled|Boolean to determine if SCRAM authentication is selected. Can be selected with `auth.ldap.enabled` or by itself. At least one method must be selected|
+|auth.ldap.enabled|Boolean to determine if LDAP authentication is selected. Can be selected with `auth.scram.enabled` or by itself. At least one method must be selected|
+|auth.ldap.servers|An array of LDAP servers to use for authentication (and possibly authoisation)|
+|auth.ldap.ldaps|Boolean to determine if `ldaps` is selected for the LDAP protocol, which it should be always|
+|auth.ldap.caConfigMap|The name of the configmap in Kubernetes containing the CA certificate for the LDAP server(s)|
+|auth.ldap.bindUserDN|The Distinguished Name (DN) of the LDAP bind user|
+|auth.ldap.bindUserSecret|The Kubernetes secret containing the password of the bind user|
+|auth.ldap.userToDNMapping|The LDAP mapping to convert from the name used to log into MongoDB to what is actually used in LDAP|
+|auth.ldap.authzQueryTemplate|The LDAP Query Template used to perform the lookup for a user's groups|
 |opsManager.tlsEnabled|Boolean determining if TLS is used to communicate from the Operator and Agents to Ops Manager|
 |opsManager.baseUrl|The URL, including protocol and port, of Ops Manager|
 |opsManager.orgId|The ID of the Organisation in Ops Manager that the project will be created|
@@ -218,18 +274,23 @@ The following table describes the values required in the relevant `values.yaml`:
 |resources.limits.mem|The max memory the containers can be allocated, include units|
 |resources.requests.cpu|The initial CPU the containers can be allocated|
 |resources.requests.mem|The initial memory the containers can be allocated, include units|
-|storage.size|The size of the volume for storage, include units|
-|storage.storageClass|The name of the StorageClass to use for the PersistentVolumes. Default is ""|
-|storage.manageStorage|Boolean to determine if the storageClass and persistentVolumes are created and managed|
-|storage.pvSize|The size, including units of the presistenVolume to create and manage|
-|storage.hostPath|The path of the workernode that will be used for the local PersistentVolume|
-|storage.workerNodes|An array of worker nodes that will be used for the local PersistentVolumes|
+|storage.persistenceType|This is either `single` for all data one one partition, or `multi` for separate partiions for `data`, `journal`, and `logs`|
+|storage.single.size|The size of the volume for all storage, include units|
+|storage.single.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for all the storage. Default is ""|
+|storage.multi.data.size|The size of the volume for database data storage, include units|
+|storage.multi.data.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database data storage. Default is ""|
+|storage.multi.journal.size|The size of the volume for database journal, include units|
+|storage.multi.journal.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database journal. Default is ""|
+|storage.multi.logs.size|The size of the volume for database logs, include units|
+|storage.multi.logs.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database logs. Default is ""|
 |tlsEnabled.enabled|Boolean describing if TLS is used in the cluster. (This should always be true)|
 |tlsEnabled.caConfigMap|Name of the configMap for the CA certificate|
-|horizon.enabled|Boolean determining of MongoDB Split Horizon is enabled|
-|horizon.nodePortStartValue|Intger of the starting value for NodePorts and Horizons|
-|horizon.nodePortHost|FQDN of either a worker node or other resolvable address that will be the basis of the MongoDB Split Horizon|
-|horizon.clusterIPStartValue|The starting IP address used as the first IP address for the ClusterIPs. Each subsequent pod will have the IP address incremented by one|
+|extAccess.enabled|Boolean determining of MongoDB Split Horizon is enabled|
+|extAccess.exposeMethod|The method to expose access MongoDB to clients externally to Kubernetes. The options are `NodePort` or `LoadBalancer`|
+|extAccess.ports|Array of objects describing horizone names with associated port addresses, and clouterIP if required. One entry is required per replica set member|
+|extAccess.ports[n].horizonName|Name of the MongoDB Horizon for the member|
+|extAccess.ports[n].port|The port of the MongoDB horizon. It is either the NodePort port or the LoadBalancer port|
+|extAccess.ports[n].clusterIP|The clusterIP of the NodePort. Not required if `LoadBalancer` is the selected method|
 |rootSecret|The secret containing the MongoDB first user|
 |kmip.enabled|Boolean determining if KMIP is enabled for the MongoDB deployment|
 |kmip.host|The host address of the KMIP device|
@@ -248,6 +309,48 @@ As of MongoDB 5.0 the versioning has changed to **\<major\>.\<rapid\>.\<patch\>-
 ### logLevel
 
 Log level for the MongoDB instance and automation agent. Can be `DEBUG` or `INFO`. In the case of `DEBUG` this is equivalent to `2` for `systemLog.verbosity` in the MongoDB config file.
+
+### auth.scram.enabled
+
+Boolean value to determine if SCRAM authentication is enabled. Both `auth.scram.enabled` and `auth.ldap.enabled` can be selected, or just one, but at least one must be `true`.
+
+### auth.ldap.enabled
+
+Boolean value to determine if LDAP authentication is enabled. Both `auth.scram.enabled` and `auth.ldap.enabled` can be selected, or just one, but at least one must be `true`.
+
+### auth.ldap.servers
+
+An array of LDAP servers to use for LDAP authentication (and authorisation of selected). Required if `auth.ldap.enabled` is `true`.
+
+### auth.ldap.ldaps
+
+A boolean to determine if LDAPS is used as the protocol instead of unsafe LDAP. This should always be `true`. Required if `auth.ldap.enabled` is `true`.
+
+### auth.ldap.caConfigMap
+
+The configmap name of the CA certificate used with the LDAP servers. Required if `auth.ldap.enabled` is `true` and `auth.ldap.ldaps` is `true`.
+
+The name of the key within the configmap must be `ca-pem`.
+
+### auth.ldap.bindUserDN
+
+The Distigiushed Name (DN) of the bind user that is used to perform lookups in the directory directory. Required if `auth.ldap.enabled` is `true`.
+
+### auth.ldap.bindUserSecret
+
+The name of the Kubernetes secret that contains the password of the bind user. The key within the secret must be `password`. Required if `auth.ldap.enabled` is `true`.
+
+### auth.ldap.userToDNMapping
+
+The mapping to convert the username to the name in the LDAP directory. Required if `auth.ldap.enabled` is `true`.
+
+See the [LDAP](#ldap-authentication-and-authorisation) section for more details.
+
+### auth.ldap.authzQueryTemplate
+
+The LDAP query to lookup a user's groups within the LDAP directory. Required if `auth.ldap.enabled` is `true`.
+
+See the [LDAP](#ldap-authentication-and-authorisation) section for more details.
 
 ### opsManager.tlsEnabled
 
@@ -300,29 +403,50 @@ The initial number of CPUs that is assigned to each pod specified as either an i
 
 The initial memory that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### storage.size
+### storage.persistenceType
+
+The type of storage for the pod. Select `single` for data, journal, and logs to be on one partition. If this is select both `storage.single.size` and `storage.single.storageClass` must be provided.
+
+If separate partitions are required for data, journal, and logs then select `multi`, and then provide all the following:
+
+* `storage.multi.data.size`
+* `storage.multi.data.storageClass`
+* `storage.multi.journal.size`
+* `storage.multi.journal.storageClass`
+* `storage.multi.logs.size`
+* `storage.multi.logs.storageClass`
+
+### storage.single.size
 
 The persistent storage that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### storage.storageClass
+### storage.single.storageClass
 
-The name of the storage class that is used to create the persistentVolumeClaims.
+The name of the storage class that is used to create the persistentVolumeClaim for the data partition.
 
-### storage.manageStorage
+### storage.multi.data.size
 
-A boolean to determine if the `storageClass` and `persistenVolumes` for the deployments are also managed by Helm.
+The persistent storage that is assigned to each pod for data storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### storage.pvSize
+### storage.multi.data.storageClass
 
-The size of the persistentVolume that will be created, if managed by Helm. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+The name of the storage class that is used to create the persistentVolumeClaim for the journal partition.
 
-### storage.hostPath
+### storage.multi.journal.size
 
-The absolute path of a directory on the worker nodes to use as the persistentVolume path, if storage is managed by Helm.
+The persistent storage that is assigned to each pod for journal storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### storage.workerNodes
+### storage.multi.journal.storageClass
 
-An array of worker node names that will have persistentVolumes created on if storage is managed by Helm. The names of the worker nodes must in the same format as what is returned by `kubectl get node`.
+The name of the storage class that is used to create the persistentVolumeClaim for the log partition.
+
+### storage.multi.logs.size
+
+The persistent storage that is assigned to each pod for log storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+### storage.multi.logs.storageClass
+
+The name of the storage class that is used to create the persistentVolumeClaim.
 
 ### tlsEnabled.enabled
 
@@ -334,23 +458,31 @@ The name of the configmap that contains the X.509 certificate of the Certificate
 
 See the [Deployment Requirements](#ca-certificate-for-mongodb-deployments-highly-encouraged) section for details on creating this configmap.
 
-### horizon.enabled
+### extAccess.enabled
 
 A boolean to determine if external access, and therefore Split Horizon, is required/enabled.
 
-### horizon.nodePortHost
+### extAccess.exposeMethod
 
-The name of a Kubernetes worker node or CNAME that resolves to a worker node, or a load balancer, that is used as the external access point for Kubernetes services. This will be used as the Split Horizon access hostname and part of the MongoDB connection string external to Kuberntes.
+The service that will be used to provide access to the MognoDB replica set from external to Kubernetes. Choices are `NodePort` or `LoadBalancer`.
 
-### horizon.nodePortStartValue
+Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) should be consulted on the best method for the environment.
 
-The port number to start will as the base for the Split Horizon ports. Most be in the range of 30000 to 32767 and must be able to accommodate the number of members for the replica set, e.g. 30000 can be used for a three-member replica set but 32767 cannot because 32767 is the maximum.
+### extAccess.ports
 
-The base number and subsequent numbers cannot already be used in the Kubernetes cluster by any other NodePort.
+An array of object (see following attributes) that describe the Horizon name, port, and clusterIP for each member of the replica set. One object is required per member.
 
-### horizon.clusterIPStartValue
+### extAccess.ports[n].horizonName
 
-As part of making the NodePort service, the service will also be allocated an IP address internal to Kubernetes. This addressed will be incremented by one for each subsequent pod in the replica set. There is no fancy checks to determine if the addresses are valid. The address range must be a valid address range for services in Kuberenetes and cannot be used anywhere else in the Kubernetes cluster. 
+The MongoDB horizon name for the selected pod.
+
+### extAccess.ports[n].port
+
+The port number for either the NodePort or the LoadBalancer for the selected pod.
+
+### extAccess.ports[n].clusterIP
+
+The clusterIP for the selected pod. Only required when `NodePort` is selected as the service.
 
 ### rootSecret
 
@@ -383,6 +515,7 @@ Ensure all the following as satisfied before attempoting to deploy:
 - [ ] MongoDB deployment TLS certificate secret created (recommended)
 - [ ] Password secret for the first user created
 - [ ] Configure external access (horizons) if required
+- [ ] Configure LDAP access if required
 - [ ] Ensure all values in the relevant `values.yaml` file set
 
 ## Run

@@ -68,14 +68,16 @@ spec:
           - {{ . }}
         {{- end }}
         transportSecurity: {{ if .Values.auth.ldap.ldaps }}tls{{ end }}
+        {{- if .Values.auth.ldap.ldaps }}
         caConfigMapRef:
           name: {{ .Values.auth.ldap.caConfigMap }}
           key: ca-pem
+        {{- end }}
         bindQueryUser: {{ .Values.auth.ldap.bindUserDN }}
         bindQueryPasswordSecretRef:
           name: {{ .Values.auth.ldap.bindUserSecret }}
         userToDNMapping: {{ .Values.auth.ldap.userToDNMapping | quote}}
-        authzQueryTemplate: {{ .Values.auth.ldap.authzQueryTemplate | quote }}
+        authzQueryTemplate: {{ .Values.auth.ldap.authzQueryTemplate | quote | default "" }}
       {{- end }}
     {{- if .Values.tls.enabled }}
       internalCluster: "X509"

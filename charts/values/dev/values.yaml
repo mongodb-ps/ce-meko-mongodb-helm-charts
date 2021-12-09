@@ -19,8 +19,8 @@ auth:
     caConfigMap: custom-ca
     bindUserDN: 'CN=ldap-bind-user,CN=Users,DC=mongodb,DC=local'
     bindUserSecret: binduserpasswd
-    authzQueryTemplate: '{USER}?memberOf?base'
     userToDNMapping: '[{ match: "(.+)@MONGODB.LOCAL", substitution: "cn={0},cn=Users,dc=mongodb,dc=local"}]'
+    authzQueryTemplate: '{USER}?memberOf?base'
 
 opsManager:
   tlsEnabled: true
@@ -61,7 +61,6 @@ tls:
 extAccess:
   enabled: true
   exposeMethod: NodePort
-  nodePortSelectRandom: true
   ports:
     - horizonName: "mongod3.mongodb.local"
       port: 31250
