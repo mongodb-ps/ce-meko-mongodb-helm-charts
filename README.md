@@ -86,6 +86,8 @@ The [MongoDB Enterprise Kubernetes Operator](https://docs.mongodb.com/kubernetes
 
 [Helm](https://helm.sh/docs/intro/install/) is required to be installed and [Helmfile](https://github.com/roboll/helmfile) is also highly recommended. If Helmfile is used you will also need [Helm-Diff](https://github.com/databus23/helm-diff).
 
+These Helm charts assume PVs and Storage classes already exist within the Kubernetes cluster.
+
 ## Deployment Requirements
 
 ### Ops Manager API Access Token _REQUIRED_
