@@ -172,7 +172,7 @@ kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls <replicaSetN
 
 ### MongoDB First User _REQUIRED_
 
-A secret must exist for the first user in MongoDB. This will be a user with the `root` role. The name of the secret must be set in the releveant `values.yaml` as `rootSecret` value. The secret must contain a key called `password` that contains the password for the user. The user name is set to `<replicaSetName>-root`, where `<replicaSetName>` is the value `replicaSetName` in the relevant `values.yaml` file.
+A secret must exist for the first user in MongoDB. This will be a user with the `root` role. The name of the secret must be set in the releveant `values.yaml` as `rootSecret` value. The secret must contain a key called `password` that contains the password for the user. The username is set to `root`.
 
 The secret can be create via `kubectl` as follows:
 

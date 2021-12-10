@@ -1,0 +1,23 @@
+{{- if and .Values.additionalUsers (gt (len .Values.additionalUsers) 0)}}
+{{ $projectName := .Values.opsManager.projectName | lower }}
+{{ range .Values.additionalUsers }}
+---
+apiVersion: mongodb.com/v1
+kind: MongoDBUser
+metadata:
+  name: "{{ $projectName }}-{{ .username }}"
+spec:
+  passwordSecretKeyRef:
+    name: {{ .passwdSecret }}
+    key: password
+  username: {{ .username }} 
+  db: "admin"
+  mongodbResourceRef:
+    name: {{ $projectName | quote }}
+  roles:
+  {{- range .roles }}
+    - db: {{ .db }}
+      name: {{ .role }}
+  {{- end }}
+{{- end }}
+{{- end }}
