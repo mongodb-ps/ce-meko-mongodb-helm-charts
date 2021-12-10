@@ -1,5 +1,6 @@
 {{- if and .Values.additionalUsers (gt (len .Values.additionalUsers) 0)}}
 {{ $projectName := .Values.opsManager.projectName | lower }}
+{{ $replicaSetName := .Values.replicaSetName }}
 {{ range .Values.additionalUsers }}
 ---
 apiVersion: mongodb.com/v1
@@ -13,7 +14,7 @@ spec:
   username: {{ .username }} 
   db: "admin"
   mongodbResourceRef:
-    name: {{ $projectName | quote }}
+    name: {{ $replicaSetName | quote }}
   roles:
   {{- range .roles }}
     - db: {{ .db }}
