@@ -2,7 +2,7 @@
 apiVersion: mongodb.com/v1
 kind: MongoDB
 metadata:
-  name: {{ .Values.replicaSetName }}
+  name: {{ .Values.replicaSetName | lower }}
 spec:
   members: {{ .Values.replicas }}
   version: {{ .Values.mongoDBVersion | quote }}

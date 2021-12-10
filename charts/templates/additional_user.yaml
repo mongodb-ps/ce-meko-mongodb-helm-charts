@@ -1,12 +1,12 @@
 {{- if and .Values.additionalUsers (gt (len .Values.additionalUsers) 0)}}
-{{ $projectName := .Values.opsManager.projectName | lower }}
+{{ $projectName := (.Values.opsManager.projectName | lower) }}
 {{ $replicaSetName := .Values.replicaSetName }}
 {{ range .Values.additionalUsers }}
 ---
 apiVersion: mongodb.com/v1
 kind: MongoDBUser
 metadata:
-  name: "{{ $projectName }}-{{ .username }}"
+  name: "{{ $projectName }}-{{ .username | lower }}"
 spec:
   passwordSecretKeyRef:
     name: {{ .passwdSecret }}
@@ -14,7 +14,7 @@ spec:
   username: {{ .username }} 
   db: "admin"
   mongodbResourceRef:
-    name: {{ $replicaSetName | quote }}
+    name: {{ $replicaSetName | lower | quote }}
   roles:
   {{- range .roles }}
     - db: {{ .db }}

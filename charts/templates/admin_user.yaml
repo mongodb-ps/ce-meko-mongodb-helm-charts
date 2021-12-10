@@ -2,7 +2,7 @@
 apiVersion: mongodb.com/v1
 kind: MongoDBUser
 metadata:
-  name: {{ list .Values.opsManager.projectName  "root" | join "-" | quote }} 
+  name: {{ list (.Values.opsManager.projectName | lower)  "root" | join "-" | quote }} 
 spec:
   passwordSecretKeyRef:
     name: {{ .Values.rootSecret }}
@@ -10,7 +10,7 @@ spec:
   username: "root" 
   db: "admin"
   mongodbResourceRef:
-    name: {{ .Values.replicaSetName | quote }}
+    name: {{ .Values.replicaSetName | lower | quote }}
   roles:
     - db: "admin"
       name: "root"

@@ -1,6 +1,6 @@
 
 {{- if .Values.extAccess.enabled }}
-{{- $app := .Values.replicaSetName -}}
+{{- $app := (.Values.replicaSetName | lower) -}}
 {{- $exposeMethod := .Values.extAccess.exposeMethod }}
 {{- $namespace := .Release.Namespace -}}
 {{ range $index, $value := .Values.extAccess.ports }}
