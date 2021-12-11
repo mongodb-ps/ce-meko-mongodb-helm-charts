@@ -1,10 +1,8 @@
-# k8s_rs
-
-**This documentation is a WIP**
+# k8s_mdb
 
 ## Table of Contents
 
-- [k8s_rs](#k8s_rs)
+- [k8s_mdb](#k8s_mdb)
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
   - [Steps to Deploy](#steps-to-deploy)
