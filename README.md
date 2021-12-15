@@ -11,7 +11,7 @@
     - [Ops Manager API Access Token _REQUIRED_](#ops-manager-api-access-token-required)
     - [CA Certificate for Ops Manager _REQUIRED_](#ca-certificate-for-ops-manager-required)
     - [CA Certificate for MongoDB Deployments _HIGHLY ENCOURAGED_](#ca-certificate-for-mongodb-deployments-highly-encouraged)
-    - [TLS PEM Files for MongoDB Deployments _HIGHLY ENCOURAGED_](#tls-pem-files-for-mongodb-deployments-highly-encouraged)
+    - [TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_](#tls-x509-certificates-for-mongodb-deployments-highly-encouraged)
     - [MongoDB First User _REQUIRED_](#mongodb-first-user-required)
   - [External Access, Services and Horizons](#external-access-services-and-horizons)
   - [Encryption At Rest](#encryption-at-rest)
@@ -136,7 +136,7 @@ This is most likely common in all MongoDB deployments.
 
 **REQUIRED** if `tls.enabled` is `true`.
 
-### TLS PEM Files for MongoDB Deployments _HIGHLY ENCOURAGED_
+### TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_
 
 This requires two secrets: one for the client communications and one for cluster communications.
 
