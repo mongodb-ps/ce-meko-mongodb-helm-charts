@@ -142,7 +142,7 @@ This requires two secrets: one for the client communications and one for cluster
 
 The secrets contain the X.509 key and certificate. One key/certificate pair is used for all members of the replica set, therefore a Subject Alternate Name (SAN) entry must exist for each member of the replica set. The SANs will be in the form of:
 
-**\<replicaSetName\>-\<X\>.\<replicaSetName\>.\<namespace\>.svc.cluster.local**
+**\<replicaSetName\>-\<X\>.\<replicaSetName\>-svc.\<namespace\>.svc.cluster.local**
 
 Where `<replicaSetName>` is the `replicaSetName` in the `values.yaml` for your deployment and `<X>` is the 0-based number of the pod.
 
