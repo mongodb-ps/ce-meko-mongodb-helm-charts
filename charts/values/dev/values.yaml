@@ -72,7 +72,7 @@ extAccess:
       port: 31252
       clusterIP: 10.43.125.22
 
-rootSecret: dev-adm-passwd
+mongoDBAdminPasswdSecret: dev-adm-passwd
 
 kmip:
   enabled: false

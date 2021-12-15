@@ -56,7 +56,7 @@
     - [extAccess.ports[n].horizonName](#extaccessportsnhorizonname)
     - [extAccess.ports[n].port](#extaccessportsnport)
     - [extAccess.ports[n].clusterIP](#extaccessportsnclusterip)
-    - [rootSecret](#rootsecret)
+    - [mongoDBAdminPasswdSecret](#mongoDBAdminPasswdSecret)
     - [kmip.enabled](#kmipenabled)
     - [kmip.host](#kmiphost)
     - [kmip.port](#kmipport)
@@ -170,7 +170,7 @@ kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls <replicaSetN
 
 ### MongoDB First User _REQUIRED_
 
-A secret must exist for the first user in MongoDB. This will be a user with the `root` role. The name of the secret must be set in the releveant `values.yaml` as `rootSecret` value. The secret must contain a key called `password` that contains the password for the user. The username is set to `root`.
+A secret must exist for the first user in MongoDB. This will be a user with the `root` role. The name of the secret must be set in the releveant `values.yaml` as `mongoDBAdminPasswdSecret` value. The secret must contain a key called `password` that contains the password for the user. The username is set to `root`.
 
 The secret can be create via `kubectl` as follows:
 
@@ -291,7 +291,7 @@ The following table describes the values required in the relevant `values.yaml`:
 |extAccess.ports[n].horizonName|Name of the MongoDB Horizon for the member|
 |extAccess.ports[n].port|The port of the MongoDB horizon. It is either the NodePort port or the LoadBalancer port|
 |extAccess.ports[n].clusterIP|The clusterIP of the NodePort. Not required if `LoadBalancer` is the selected method|
-|rootSecret|The secret containing the MongoDB first user|
+|mongoDBAdminPasswdSecret|The secret containing the MongoDB first user|
 |kmip.enabled|Boolean determining if KMIP is enabled for the MongoDB deployment|
 |kmip.host|The host address of the KMIP device|
 |kmip.port|The port of the KMIP device|
@@ -484,7 +484,7 @@ The port number for either the NodePort or the LoadBalancer for the selected pod
 
 The clusterIP for the selected pod. Only required when `NodePort` is selected as the service.
 
-### rootSecret
+### mongoDBAdminPasswdSecret
 
 This is the secret name that contains the password for the first user.
 
@@ -506,7 +506,7 @@ The port number of the KMIP device/service, normally 5696.
 
 Ensure all the following as satisfied before attempoting to deploy:
 
-- [ ] Create a new directory under the `charts/'values` directory for the environment
+- [ ] Create a new directory under the `charts/values` directory for the environment
 - [ ] Copy the example `values.yaml` file from the `examples` directory to the new directory
 - [ ] Ops Manager API Access Token created
 - [ ] Ops Manager API Access Token secret created

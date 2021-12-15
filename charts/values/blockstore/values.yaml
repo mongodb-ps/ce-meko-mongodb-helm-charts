@@ -53,7 +53,7 @@ tls:
 extAccess:
   enabled: false
 
-rootSecret: dev-adm-passwd
+mongoDBAdminPasswdSecret: dev-adm-passwd
 
 kmip:
   enabled: false

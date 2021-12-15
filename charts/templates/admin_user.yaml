@@ -5,7 +5,7 @@ metadata:
   name: {{ list (.Values.opsManager.projectName | lower)  "root" | join "-" | quote }} 
 spec:
   passwordSecretKeyRef:
-    name: {{ .Values.rootSecret }}
+    name: {{ .Values.mongoDBAdminPasswdSecret }}
     key: password
   username: "root" 
   db: "admin"
