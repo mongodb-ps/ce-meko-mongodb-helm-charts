@@ -1,9 +1,9 @@
 # k8s_mdb
 
 ## Table of Contents
-
 - [k8s_mdb](#k8s_mdb)
   - [Table of Contents](#table-of-contents)
+  - [Compatability](#compatability)
   - [Description](#description)
   - [Steps to Deploy](#steps-to-deploy)
   - [Prerequisites](#prerequisites)
@@ -19,6 +19,7 @@
   - [Set Up](#set-up)
     - [replicaSetName](#replicasetname)
     - [mongoDBVersion](#mongodbversion)
+    - [mongoDBFCV](#mongodbfcv)
     - [logLevel](#loglevel)
     - [auth.scram.enabled](#authscramenabled)
     - [auth.ldap.enabled](#authldapenabled)
@@ -62,6 +63,11 @@
     - [kmip.port](#kmipport)
   - [Predeployment Checklist](#predeployment-checklist)
   - [Run](#run)
+
+## Compatability
+
+This version of the Helm charts has been tested with MongoDB Kubernetes Operator version(s):
+* 1.16.0
 
 ## Description
 
@@ -150,9 +156,9 @@ The certificates must include the name of FQDN external to Kubernetes as a Subje
 
 The secrets must be named as follows:
 
-**\<replicaSetName\>-\<cert\>**
+**\mdb-<replicaSetName\>-\<cert\>**
 
-**\<replicaSetName\>-\<clusterfile\>**
+**\mdb-<replicaSetName\>-\<clusterfile\>**
 
 The two secrets can be created as follows:
 
@@ -252,7 +258,8 @@ The following table describes the values required in the relevant `values.yaml`:
 |Key|Purpose|
 |--------------------------|------------------------------------|
 |replicaSetName|Name of the cluster, used for naming the pods and replica set name|
-|mongoDBVersion|The version of MongoDB to installed, such as `4.4.8-ent` for MognoDB Enterprise 4.4.8|
+|mongoDBVersion|The version of MongoDB to installed, such as `5.0.8-ent` for MongoDB Enterprise 5.0.8 Enterprise Advanced|
+|mongoDBFCV|A string describing the Feature Compatibility Version of the deployment, default is "5.0"|
 |replicas|Number of members in the replica set (integer)|
 |logLevel|Level of logging for MongoDB and agents, INFO or DEBUG|
 |auth.scram.enabled|Boolean to determine if SCRAM authentication is selected. Can be selected with `auth.ldap.enabled` or by itself. At least one method must be selected|
@@ -305,6 +312,15 @@ The name to be used for the replica set. The name should be included in the Mong
 The version of MongoDB to deploy. The form is **\<major\>.\<release-series\>.\<patch\>-ent**, such as `4.4.7-ent` for Enterprise versions. We do not encourage using odd numbers for the release series value, as these are development series.
 
 As of MongoDB 5.0 the versioning has changed to **\<major\>.\<rapid\>.\<patch\>-ent**, where the rapid is a quarterly release of new features and not a develop/stable differentiator anymore.
+
+
+### mongoDBFCV
+
+The Feature Compatibility Version of the deployment. Can only ever at or one major version below the currently installed MongoDB version.
+
+Is a string value.
+
+Default is "5.0"
 
 ### logLevel
 

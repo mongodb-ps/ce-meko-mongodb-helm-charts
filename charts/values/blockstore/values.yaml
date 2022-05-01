@@ -2,9 +2,10 @@
 
 replicaSetName: blockstore0
 
-mongoDBVersion: 4.4.10-ent
+mongoDBVersion: 5.0.8-ent
+mongoDBFCV: "5.0"
 
-replicas: 3
+replicas: 1
 
 logLevel: DEBUG
 
@@ -16,10 +17,10 @@ auth:
 
 opsManager:
   tlsEnabled: true
-  baseUrl: https://mongod0.mongodb.local:8443
-  orgId: 5e439737e976cc5e50a7b13d
-  projectName: oplogStore
-  omSecret: organization-secret
+  baseUrl: https://ops-manager-svc.mongodb.svc.cluster.local:8443
+  orgId: 626deb01f7d72e132e83d321
+  projectName: blockStore
+  omSecret: k8s-om
   caConfigmap: om-ca-cert
 
 resources:
