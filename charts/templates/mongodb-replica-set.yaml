@@ -6,7 +6,7 @@ metadata:
 spec:
   members: {{ .Values.replicas }}
   version: {{ .Values.mongoDBVersion | quote }}
-  featureCompatibilityVersion: {{ .Values.mongoDBFCV | default "4.4" | quote }}
+  featureCompatibilityVersion: {{ .Values.mongoDBFCV | default "5.0" | quote }}
   opsManager:
     configMapRef:
       name: project-{{ .Values.opsManager.projectName | lower }}
@@ -16,6 +16,8 @@ spec:
   podSpec:
     podTemplate:
       spec:
+        imagePullSecrets:
+          - name: regcred
         initContainers:
           - name: mongodb-enterprise-init-database
         containers:
@@ -48,11 +50,6 @@ spec:
   agent:
     startupOptions:
       logLevel: {{ .Values.logLevel }}
-      enableLocalConfigurationServer: "true"
-      {{- if .Values.opsManager.tlsEnabled }}
-      httpsCAFile: /mongodb-automation/ca.pem
-      tlsMMSServerClientCertificate: /mongodb-automation/server.pem
-      {{- end }}
   security:
     authentication:
       enabled: true
@@ -83,12 +80,9 @@ spec:
       internalCluster: "X509"
       agents:
         mode: SCRAM
+    certsSecretPrefix: "mdb"
     tls:
-      enabled: true
       ca: {{ .Values.tls.caConfigMap }}
-      secretRef:
-        secretRef:
-          name: {{ .Values.opsManager.projectName | lower }}
     {{- end }}
   {{ if and .Values.extAccess.enabled .Values.tls.enabled -}}
   connectivity:
