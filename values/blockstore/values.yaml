@@ -48,7 +48,7 @@ storage:
       storageClass: logClass
 
 tls:
-  enabled: true
+  enabled: false
   caConfigMap: custom-ca
 
 extAccess:
@@ -60,3 +60,15 @@ kmip:
   enabled: false
   host: kmip-svc.mongodb.svc.cluster.local
   port: 5696
+
+
+additionalUsers:
+  - username: blockstore0-om-user
+    passwdSecret: om-user
+    roles:
+      - db: admin
+        role: "clusterMonitor"
+      - db: admin
+        role: "readWriteAnyDatabase"
+      - db: admin
+        role: "userAdminAnyDatabase"

@@ -59,3 +59,15 @@ kmip:
   enabled: false
   host: kmip-svc.mongodb.svc.cluster.local
   port: 5696
+
+
+additionalUsers:
+  - username: oplog0-om-user
+    passwdSecret: om-user
+    roles:
+      - db: admin
+        role: "clusterMonitor"
+      - db: admin
+        role: "readWriteAnyDatabase"
+      - db: admin
+        role: "userAdminAnyDatabase"
