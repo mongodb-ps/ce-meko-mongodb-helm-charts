@@ -39,6 +39,7 @@ resources:
     mem: 4Gi
 
 storage:
+  nfs: false
   persistenceType: single
   single:
     size: 5Gi

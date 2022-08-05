@@ -22,6 +22,7 @@
     - [mongoDBFCV](#mongodbfcv)
     - [logLevel](#loglevel)
     - [auth.scram.enabled](#authscramenabled)
+    - [auth.allowNoManagedUsers](#authallownomanagedusers)
     - [auth.ldap.enabled](#authldapenabled)
     - [auth.ldap.servers](#authldapservers)
     - [auth.ldap.ldaps](#authldapldaps)
@@ -41,6 +42,8 @@
     - [resources.requests.cpu](#resourcesrequestscpu)
     - [resources.requests.mem](#resourcesrequestsmem)
     - [storage.persistenceType](#storagepersistencetype)
+    - [storage.nfs](#storagenfs)
+    - [storage.nfsInitImage](#storagenfsinitimage)
     - [storage.single.size](#storagesinglesize)
     - [storage.single.storageClass](#storagesinglestorageclass)
     - [storage.multi.data.size](#storagemultidatasize)
@@ -58,6 +61,7 @@
     - [extAccess.ports[n].port](#extaccessportsnport)
     - [extAccess.ports[n].clusterIP](#extaccessportsnclusterip)
     - [mongoDBAdminPasswdSecret](#mongodbadminpasswdsecret)
+    - [additionalUsers](#additionalusers)
     - [kmip.enabled](#kmipenabled)
     - [kmip.host](#kmiphost)
     - [kmip.port](#kmipport)
@@ -96,7 +100,7 @@ These Helm charts assume PVs and Storage classes already exist within the Kubern
 
 ### Ops Manager API Access Token _REQUIRED_
 
-Within Ops Manager, an Organisation-level API token must be created with the `Organisation Owner` privilege (WIP) for the organisation that is going to be used for MongoDB deployments. The MongoDB [documentation](https://docs.opsmanager.mongodb.com/current/tutorial/manage-programmatic-api-keys/#create-an-api-key-in-an-organization) explains how to create an Organisational-level API token (key pair).
+Within Ops Manager, an Organisation-level API token must be created with the `Organisation Owner` privilege (WIP) for the organisation that is going to be used for MongoDB deployments. The MongoDB [documentation](https://docs.opsmanager.mongodb.com/current/tutorial/manage-programmatic-api-keys/#create-an-api-key-in-an-organization) explains how to create an Organisational-level API token (key pair). Ensure that the CIDR range that will be used by the Kubernetes Operator is included in the API Access List.
 
 The following illustrates how to create the Kubernetes secret for the access token:
 
@@ -163,11 +167,11 @@ The secrets must be named as follows:
 The two secrets can be created as follows:
 
 ```shell
-kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls <replicaSetName>-cert \
+kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<replicaSetName>-cert \
   --cert=<path-to-cert> \
   --key=<path-to-key>
 
-kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls <replicaSetName>-clusterfile \
+kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<replicaSetName>-clusterfile \
   --cert=<path-to-cert> \
   --key=<path-to-key>
 ```
@@ -263,6 +267,7 @@ The following table describes the values required in the relevant `values.yaml`:
 |replicas|Number of members in the replica set (integer)|
 |logLevel|Level of logging for MongoDB and agents, INFO or DEBUG|
 |auth.scram.enabled|Boolean to determine if SCRAM authentication is selected. Can be selected with `auth.ldap.enabled` or by itself. At least one method must be selected|
+|auth.allowNoManagedUsers|Boolean to determine if users not managed by Kubernetes are allowed|
 |auth.ldap.enabled|Boolean to determine if LDAP authentication is selected. Can be selected with `auth.scram.enabled` or by itself. At least one method must be selected|
 |auth.ldap.servers|An array of LDAP servers to use for authentication (and possibly authoisation)|
 |auth.ldap.ldaps|Boolean to determine if `ldaps` is selected for the LDAP protocol, which it should be always|
@@ -282,6 +287,8 @@ The following table describes the values required in the relevant `values.yaml`:
 |resources.requests.cpu|The initial CPU the containers can be allocated|
 |resources.requests.mem|The initial memory the containers can be allocated, include units|
 |storage.persistenceType|This is either `single` for all data one one partition, or `multi` for separate partiions for `data`, `journal`, and `logs`|
+|storage.nfs|Boolean value to determine if NFS if used for persistence storage, which requires a further init container to fix permissions on NFS mount|
+|storage.nfsInitImage|Image name a tag for the init container to perform the NFS permissions modification. Defaults to the same init container image as the database|
 |storage.single.size|The size of the volume for all storage, include units|
 |storage.single.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for all the storage. Default is ""|
 |storage.multi.data.size|The size of the volume for database data storage, include units|
@@ -299,6 +306,10 @@ The following table describes the values required in the relevant `values.yaml`:
 |extAccess.ports[n].port|The port of the MongoDB horizon. It is either the NodePort port or the LoadBalancer port|
 |extAccess.ports[n].clusterIP|The clusterIP of the NodePort. Not required if `LoadBalancer` is the selected method|
 |mongoDBAdminPasswdSecret|The secret containing the MongoDB first user|
+|additionalUsers[n]|Array of additional database users to create|
+|additionalUsers[n].username| Username of the database user to manage|
+|additionalUsers[n].passwdSecret|The secret name that contains the password for the user|
+|additionalUsers[n].roles[m]|Array of roles for the user, consisting of a `db` and the `role`|
 |kmip.enabled|Boolean determining if KMIP is enabled for the MongoDB deployment|
 |kmip.host|The host address of the KMIP device|
 |kmip.port|The port of the KMIP device|
@@ -329,6 +340,12 @@ Log level for the MongoDB instance and automation agent. Can be `DEBUG` or `INFO
 ### auth.scram.enabled
 
 Boolean value to determine if SCRAM authentication is enabled. Both `auth.scram.enabled` and `auth.ldap.enabled` can be selected, or just one, but at least one must be `true`.
+
+### auth.allowNoManagedUsers
+
+Boolean value to determine if users *NOT* managed by Kuberentes are allowed. This can include via `mongorestore` or via `mongosh` etc. If this is `false` Ops Manager will remove any non-Kubernetes managed users.
+
+Default is `true`
 
 ### auth.ldap.enabled
 
@@ -432,6 +449,22 @@ If separate partitions are required for data, journal, and logs then select `mul
 * `storage.multi.logs.size`
 * `storage.multi.logs.storageClass`
 
+### storage.nfs
+
+A boolean to determine if NFS is used as the persistent storage. If this is `true` then an additional init container is prepended to the init container array in the statefulSet to that will `chown`` the permissions of the NFS mount to be that of the mongod user. The Kubernetes Operator uses 2000:2000 for the UID and GID of the mongod user.
+
+This init container will run as root so the permissions can be set. This is done via setting the `runAsUser` to `0` and the `runAsNonRoot` to `false`. Ensure you understand the implications of this.
+
+This will chown `/data`, `/journal` and `/var/log/mongodb-mms-automation` to 2000:2000
+
+Default is `false`
+
+### storage.nfsInitImage
+
+The image to use for the inint container to perform the `chown` on the NFS mounts.
+
+The default is `quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9"`
+
 ### storage.single.size
 
 The persistent storage that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
@@ -506,6 +539,36 @@ This is the secret name that contains the password for the first user.
 
 See the [Deployment Requirements](#mongodb-first-user-required) section for details on creating this secret.
 
+### additionalUsers
+
+This is an array of additional data base users to create. The format is as follows:
+
+```yaml
+additionalUsers:
+  - username: oplog0-om-user
+    passwdSecret: om-user
+    roles:
+      - db: admin
+        role: "clusterMonitor"
+      - db: admin
+        role: "readWriteAnyDatabase"
+      - db: admin
+        role: "userAdminAnyDatabase"
+```
+
+The `username` must be unique in the database. The `passwdSecret` is a reference to a Kubernetes Secret containing the user password. Just like the [first user](#mongodb-first-user-required), we can use the same Kubernetes command to create the Secret:
+
+```shell
+kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret generic <name-of-secret> \
+  --from-literal=password=<password>
+```
+
+Each entry in the array will create a new MongoDB User (MDBU) resource in Kubernetes named:
+
+**\<replicaSetName\>-\<username\>**
+
+This is important to remember of creating the blockstore or oplogstore for Ops Manager as the MDBU resource name is required.
+
 ### kmip.enabled
 
 A boolean value to determine if KMIP is used to perform encryption at rest within the MongoDB deployments.
@@ -524,7 +587,7 @@ Ensure all the following as satisfied before attempoting to deploy:
 
 - [ ] Create a new directory under the `charts/values` directory for the environment
 - [ ] Copy the example `values.yaml` file from the `examples` directory to the new directory
-- [ ] Ops Manager API Access Token created
+- [ ] Ops Manager API Access Token created including the CIDR range of the Kubernetes Operator for the API Access List
 - [ ] Ops Manager API Access Token secret created
 - [ ] Ops Manager CA Certificate secret created
 - [ ] MongoDB deployment CA certificate configmap created (recommended)

@@ -19,6 +19,26 @@ spec:
         imagePullSecrets:
           - name: regcred
         initContainers:
+        {{- if and (hasKey .Values.storage "nfs") (eq .Values.storage.nfs true) }}
+          - name: fix-nfs
+            securityContext:
+              runAsNonRoot: false
+              runAsUser: 0
+            image: {{ .Values.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9" | quote }}
+            command: ["/bin/sh", "-c"]
+            args:
+            - chown 2000:2000 -R /data /journal /var/log/mongodb-mms-automation
+            volumeMounts:
+            - mountPath: /data
+              name: data
+              subPath: data
+            - mountPath: /journal
+              name: data
+              subPath: journal
+            - mountPath: /var/log/mongodb-mms-automation
+              name: data
+              subPath: logs
+        {{- end}}
           - name: mongodb-enterprise-init-database
         containers:
           - name: mongodb-enterprise-database
@@ -53,6 +73,7 @@ spec:
   security:
     authentication:
       enabled: true
+      ignoreUnknownUsers: {{ .Values.auth.allowNoManagedUsers | default true }}
       modes: 
       {{- if .Values.auth.scram.enabled }}
         - SCRAM
