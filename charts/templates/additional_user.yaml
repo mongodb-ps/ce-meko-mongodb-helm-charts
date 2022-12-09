@@ -1,7 +1,7 @@
 {{- if .Values.additionalUsers }}
 {{- if gt (len .Values.additionalUsers) 0}}
 {{ $projectName := (.Values.opsManager.projectName | lower) }}
-{{ $replicaSetName := .Values.replicaSetName }}
+{{ $clusterName := .Values.clusterName }}
 {{ range .Values.additionalUsers }}
 ---
 apiVersion: mongodb.com/v1
@@ -15,7 +15,7 @@ spec:
   username: {{ .username }} 
   db: "admin"
   mongodbResourceRef:
-    name: {{ $replicaSetName | lower | quote }}
+    name: {{ $clusterName | lower | quote }}
   roles:
   {{- range .roles }}
     - db: {{ .db }}

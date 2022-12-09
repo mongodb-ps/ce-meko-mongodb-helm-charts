@@ -1,10 +1,12 @@
 ---
 
+# Name of the cluster
 clusterName: rs-0
 
+# MongoDB version
 mongoDBVersion: 5.0.13-ent
 
-
+# section for sharded clusters
 sharding:
   enabled: false
   shardSrv:
@@ -76,7 +78,7 @@ sharding:
         port: 31299
         clusterIP: 10.43.125.29
 
-
+# section for replica sets
 replicaSet:
   enabled: true
   replicas: 3
@@ -119,6 +121,7 @@ replicaSet:
 
 logLevel: DEBUG
 
+# Authentication and authorisation
 auth:
   scram:
     enabled: true
@@ -133,6 +136,7 @@ auth:
     userToDNMapping: '[{ match: "(.+)@MONGODB.LOCAL", substitution: "cn={0},cn=Users,dc=mongodb,dc=local"}]'
     authzQueryTemplate: '{USER}?memberOf?base'
 
+# Ops Manager target
 opsManager:
   tlsEnabled: true
   baseUrl: https://mongod0.mongodb.local:8443
@@ -141,17 +145,15 @@ opsManager:
   omSecret: organization-secret
   caConfigmap: om-ca-cert
 
+# TLS settings
 tls:
   enabled: true
   caConfigMap: custom-ca
 
+# Password secret for root user
 mongoDBAdminPasswdSecret: dev-adm-passwd
 
-kmip:
-  enabled: false
-  host: kmip-svc.mongodb.svc.cluster.local
-  port: 5696
-
+# Additional users to create
 additionalUsers:
   - username: om-user
     passwdSecret: om-user

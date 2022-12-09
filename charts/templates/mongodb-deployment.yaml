@@ -1,0 +1,303 @@
+---
+apiVersion: mongodb.com/v1
+kind: MongoDB
+metadata:
+  name: {{ .Values.clusterName | lower }}
+spec:
+  version: {{ .Values.mongoDBVersion | quote }}
+  featureCompatibilityVersion: {{ .Values.mongoDBFCV | default "5.0" | quote }}
+  opsManager:
+    configMapRef:
+      name: project-{{ .Values.opsManager.projectName | lower }}
+  credentials: {{ .Values.opsManager.omSecret }}
+  persistent: true
+  {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true)}}
+  type: ShardedCluster
+  shardCount: {{ .Values.sharding.shardSrv.shards }}
+  mongodsPerShardCount: {{ .Values.sharding.shardSrv.memberPerShard }}
+  mongosCount: {{ .Values.sharding.mongos.count }}
+  configServerCount: {{ .Values.sharding.configSrv.replicas }}
+  shardPodSpec:
+    podTemplate:
+      spec:
+        imagePullSecrets:
+          - name: regcred
+        initContainers:
+        {{- if and (hasKey .Values.sharding.shardSrv.storage "nfs") (eq .Values.sharding.shardSrv.storage.nfs true) }}
+          - name: fix-nfs
+            securityContext:
+              runAsNonRoot: false
+              runAsUser: 0
+            image: {{ .Values.sharding.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9" | quote }}
+            command: ["/bin/sh", "-c"]
+            args:
+            - chown 2000:2000 -R /data /journal /var/log/mongodb-mms-automation
+            volumeMounts:
+            - mountPath: /data
+              name: data
+              subPath: data
+            - mountPath: /journal
+              name: data
+              subPath: journal
+            - mountPath: /var/log/mongodb-mms-automation
+              name: data
+              subPath: logs
+        {{- end}}
+          - name: mongodb-enterprise-init-database
+        containers:
+          - name: mongodb-enterprise-database
+            resources:
+              limits:
+                cpu: {{ .Values.sharding.shardSrv.resources.limits.cpu }}
+                memory: {{ .Values.sharding.shardSrv.resources.limits.mem }}
+              requests:
+                cpu: {{ .Values.sharding.shardSrv.resources.requests.cpu }}
+                memory: {{ .Values.sharding.shardSrv.resources.requests.mem }}
+      podAntiAffinityTopologyKey: "kubernetes.io/hostname"
+      persistence:
+        {{- if eq (.Values.sharding.shardSrv.storage.persistenceType | lower) "single"}}
+        single:
+          storage: {{ .Values.sharding.shardSrv.storage.single.size }}
+          storageClass: {{ .Values.sharding.shardSrv.storage.single.storageClass }}
+        {{- else }}
+        multiple:
+          data:
+            storage: {{ .Values.sharding.shardSrv.storage.multi.data.size }}
+            storageClass: {{ .Values.sharding.shardSrv.storage.multi.data.storageClass }}
+          journal:
+            storage: {{ .Values.sharding.shardSrv.storage.multi.journal.size }}
+            storageClass: {{ .Values.sharding.shardSrv.storage.multi.journal.storageClass }}
+          logs:
+            storage: {{ .Values.sharding.shardSrv.storage.multi.logs.size }}
+            storageClass: {{ .Values.sharding.shardSrv.storage.multi.logs.storageClass }}
+        {{- end }}
+    additionalMongodConfig: &mongodAdditionalConfigData 
+      {{- if .Values.tls.enabled }}
+      net:
+        tls:
+          mode: requireTLS
+          disabledProtocols: TLS1_0,TLS1_1
+      setParameter:
+        suppressNoTLSPeerCertificateWarning: true
+      {{- end }}
+      systemLog:
+        {{- if eq (.Values.logLevel | upper) "DEBUG" }}
+        verbosity: 2
+        {{- end }}
+        timeStampFormat: iso8601-local
+      {{- if .Values.kmip.enabled }}
+      security:
+        enableEncryption: true
+        kmip:
+          serverName: {{ .Values.kmip.host }}
+          port: {{ .Values.kmip.port }}
+          clientCertificateFile: /mongodb-automation/server.pem
+          serverCAFile: /mongodb-automation/ca.pem
+      {{- end }}
+  mongosPodSpec:
+    podTemplate:
+      spec:
+        imagePullSecrets:
+          - name: regcred
+        initContainers:
+          - name: mongodb-enterprise-init-database
+        containers:
+          - name: mongodb-enterprise-database
+            resources:
+              limits:
+                cpu: {{ .Values.sharding.mongos.resources.limits.cpu }}
+                memory: {{ .Values.sharding.mongos.resources.limits.mem }}
+              requests:
+                cpu: {{ .Values.sharding.mongos.resources.requests.cpu }}
+                memory: {{ .Values.sharding.mongos.resources.requests.mem }}
+    podAntiAffinityTopologyKey: "kubernetes.io/hostname"
+    additionalMongodConfig: *mongodAdditionalConfigData
+  configSrvPodSpec:
+    podTemplate:
+      spec:
+        imagePullSecrets:
+          - name: regcred
+        initContainers:
+        {{- if and (hasKey .Values.sharding.configSrv.storage "nfs") (eq .Values.sharding.configSrv.storage.nfs true) }}
+          - name: fix-nfs
+            securityContext:
+              runAsNonRoot: false
+              runAsUser: 0
+            image: {{ .Values.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9" | quote }}
+            command: ["/bin/sh", "-c"]
+            args:
+            - chown 2000:2000 -R /data /journal /var/log/mongodb-mms-automation
+            volumeMounts:
+            - mountPath: /data
+              name: data
+              subPath: data
+            - mountPath: /journal
+              name: data
+              subPath: journal
+            - mountPath: /var/log/mongodb-mms-automation
+              name: data
+              subPath: logs
+        {{- end}}
+          - name: mongodb-enterprise-init-database
+        containers:
+          - name: mongodb-enterprise-database
+            resources:
+              limits:
+                cpu: {{ .Values.sharding.configSrv.resources.limits.cpu }}
+                memory: {{ .Values.sharding.configSrv.resources.limits.mem }}
+              requests:
+                cpu: {{ .Values.sharding.configSrv.resources.requests.cpu }}
+                memory: {{ .Values.sharding.configSrv.resources.requests.mem }}
+      podAntiAffinityTopologyKey: "kubernetes.io/hostname"
+      persistence:
+        {{- if eq (.Values.sharding.configSrv.storage.persistenceType | lower) "single"}}
+        single:
+          storage: {{ .Values.sharding.configSrv.storage.single.size }}
+          storageClass: {{ .Values.sharding.configSrv.storage.single.storageClass }}
+        {{- else }}
+        multiple:
+          data:
+            storage: {{ .Values.sharding.configSrv.storage.multi.data.size }}
+            storageClass: {{ .Values.sharding.configSrv.storage.multi.data.storageClass }}
+          journal:
+            storage: {{ .Values.sharding.configSrv.storage.multi.journal.size }}
+            storageClass: {{ .Values.sharding.configSrv.storage.multi.journal.storageClass }}
+          logs:
+            storage: {{ .Values.sharding.configSrv.storage.multi.logs.size }}
+            storageClass: {{ .Values.sharding.configSrv.storage.multi.logs.storageClass }}
+        {{- end }}
+    additionalMongodConfig: *mongodAdditionalConfigData
+  {{- if and (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true)}}
+  exposedExternally: true
+  {{- end }}
+  {{- else }}
+  type: ReplicaSet
+  members: {{ .Values.replicaSet.replicas }}
+  podSpec:
+    podTemplate:
+      spec:
+        imagePullSecrets:
+          - name: regcred
+        initContainers:
+        {{- if and (hasKey .Values.replicaSet.storage "nfs") (eq .Values.replicaSet.storage.nfs true) }}
+          - name: fix-nfs
+            securityContext:
+              runAsNonRoot: false
+              runAsUser: 0
+            image: {{ .Values.replicaSet.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9" | quote }}
+            command: ["/bin/sh", "-c"]
+            args:
+            - chown 2000:2000 -R /data /journal /var/log/mongodb-mms-automation
+            volumeMounts:
+            - mountPath: /data
+              name: data
+              subPath: data
+            - mountPath: /journal
+              name: data
+              subPath: journal
+            - mountPath: /var/log/mongodb-mms-automation
+              name: data
+              subPath: logs
+        {{- end}}
+          - name: mongodb-enterprise-init-database
+        containers:
+          - name: mongodb-enterprise-database
+            resources:
+              limits:
+                cpu: {{ .Values.replicaSet.resources.limits.cpu }}
+                memory: {{ .Values.replicaSet.resources.limits.mem }}
+              requests:
+                cpu: {{ .Values.replicaSet.resources.requests.cpu }}
+                memory: {{ .Values.replicaSet.resources.requests.mem }}
+    podAntiAffinityTopologyKey: "kubernetes.io/hostname"
+    persistence:
+      {{- if eq (.Values.replicaSet.storage.persistenceType | lower) "single"}}
+      single:
+        storage: {{ .Values.replicaSet.storage.single.size }}
+        storageClass: {{ .Values.replicaSet.storage.single.storageClass }}
+      {{- else }}
+      multiple:
+        data:
+          storage: {{ .Values.replicaSet.storage.multi.data.size }}
+          storageClass: {{ .Values.replicaSet.storage.multi.data.storageClass }}
+        journal:
+          storage: {{ .Values.replicaSet.storage.multi.journal.size }}
+          storageClass: {{ .Values.replicaSet.storage.multi.journal.storageClass }}
+        logs:
+          storage: {{ .Values.replicaSet.storage.multi.logs.size }}
+          storageClass: {{ .Values.replicaSet.storage.multi.logs.storageClass }}
+      {{- end }}
+  additionalMongodConfig: 
+      {{- if .Values.tls.enabled }}
+      net:
+        tls:
+          mode: requireTLS
+          disabledProtocols: TLS1_0,TLS1_1
+      setParameter:
+        suppressNoTLSPeerCertificateWarning: true
+      {{- end }}
+      systemLog:
+        {{- if eq (.Values.logLevel | upper) "DEBUG" }}
+        verbosity: 2
+        {{- end }}
+        timeStampFormat: iso8601-local
+      {{- if .Values.kmip.enabled }}
+      security:
+        enableEncryption: true
+        kmip:
+          serverName: {{ .Values.kmip.host }}
+          port: {{ .Values.kmip.port }}
+          clientCertificateFile: /mongodb-automation/server.pem
+          serverCAFile: /mongodb-automation/ca.pem
+      {{- end }}
+  {{ if and (hasKey .Values.replicaSet "extAccess") (hasKey .Values.replicaSet.extAccess "enabled") (eq .Values.replicaSet.extAccess.enabled true) (eq .Values.tls.enabled true) -}}
+  exposedExternally: true
+  connectivity:
+    replicaSetHorizons:
+      {{- range .Values.replicaSet.extAccess.ports }}
+      - "external": "{{ .horizonName }}:{{ .port }}"
+      {{- end }}
+  {{ end -}}
+  {{- end }}
+  agent:
+    startupOptions:
+      logLevel: {{ .Values.logLevel }}
+  security:
+    authentication:
+      enabled: true
+      ignoreUnknownUsers: {{ .Values.auth.allowNoManagedUsers | default true }}
+      modes: 
+      {{- if and (hasKey .Values.auth "scram") (hasKey .Values.auth.scram "enabled") (eq .Values.auth.scram.enabled true) }}
+        - SCRAM
+      {{- end }}
+      {{- if and (hasKey .Values.auth "ldap") (hasKey .Values.auth.ldap "enabled") (eq .Values.auth.ldap.enabled true) }}
+        - LDAP
+      ldap:
+        servers:
+        {{- range .Values.auth.ldap.servers }}
+          - {{ . }}
+        {{- end }}
+        transportSecurity: {{ if .Values.auth.ldap.ldaps }}tls{{ end }}
+        {{- if .Values.auth.ldap.ldaps }}
+        caConfigMapRef:
+          name: {{ .Values.auth.ldap.caConfigMap }}
+          key: ca-pem
+        {{- end }}
+        bindQueryUser: {{ .Values.auth.ldap.bindUserDN }}
+        bindQueryPasswordSecretRef:
+          name: {{ .Values.auth.ldap.bindUserSecret }}
+        userToDNMapping: {{ .Values.auth.ldap.userToDNMapping | quote}}
+        authzQueryTemplate: {{ .Values.auth.ldap.authzQueryTemplate | quote | default "" }}
+      {{- end }}
+    {{- if .Values.tls.enabled }}
+      internalCluster: "X509"
+      agents:
+        mode: SCRAM
+    certsSecretPrefix: "mdb"
+    tls:
+      ca: {{ .Values.tls.caConfigMap }}
+      {{- if and (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true) (hasKey .Values.sharding.extAccess "externalDomains")}}
+      exposedExternally: true
+      additionalCertificateDomains: {{ .Values.sharding.extAccess.externalDomains }}
+      {{- end }}
+    {{- end }}

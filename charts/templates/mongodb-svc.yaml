@@ -1,9 +1,12 @@
 
-{{- if .Values.extAccess.enabled }}
-{{- $app := (.Values.replicaSetName | lower) -}}
-{{- $exposeMethod := .Values.extAccess.exposeMethod }}
+{{ if or (and (hasKey .Values.replicaSet "extAccess") (hasKey .Values.replicaSet.extAccess "enabled") (eq .Values.replicaSet.extAccess.enabled true) (eq .Values.tls.enabled true)) (and (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true)) -}}
+{{- $app := (.Values.clusterName | lower) -}}
+{{- $exposeMethod := .Values.replicaSet.extAccess.exposeMethod }}
 {{- $namespace := .Release.Namespace -}}
-{{ range $index, $value := .Values.extAccess.ports }}
+{{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true)}}
+{{- $ranges = .Values.sharding.extAccess.ports}}
+
+{{- range $index, $value := .Values.sharding.extAccess.ports -}}
 ---
 apiVersion: v1
 kind: Service
@@ -27,5 +30,34 @@ spec:
     statefulset.kubernetes.io/pod-name: {{ $app }}-{{$index}}
   sessionAffinity: None
   type: {{ $exposeMethod }}
+
+{{- end }}
+{{- else }}
+{{- range $index, $value := .Values.replicaSet.extAccess.ports -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $app }}-{{$index}}-svc
+  namespace: {{ $namespace }}
+spec:
+  {{- if eq ( $exposeMethod | lower) "nodeport" }}
+  clusterIP: {{ $value.clusterIP }}
+  {{- end }}
+  externalTrafficPolicy: Cluster
+  ports:
+  - port: 27017
+    protocol: TCP
+    targetPort: 27017
+    {{- if eq ( $exposeMethod | lower) "nodeport" }}
+    nodePort: {{ $value.port }}
+    {{- end }}
+  selector:
+    app: {{ $app }}-svc
+    statefulset.kubernetes.io/pod-name: {{ $app }}-{{$index}}
+  sessionAffinity: None
+  type: {{ $exposeMethod }}
+
+{{- end }}
 {{- end }}
 {{- end }}
