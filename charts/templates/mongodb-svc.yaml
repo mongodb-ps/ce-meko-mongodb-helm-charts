@@ -3,8 +3,7 @@
 {{- $app := (.Values.clusterName | lower) -}}
 {{- $exposeMethod := .Values.replicaSet.extAccess.exposeMethod }}
 {{- $namespace := .Release.Namespace -}}
-{{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true)}}
-{{- $ranges = .Values.sharding.extAccess.ports}}
+{{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true) (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true)}}
 
 {{- range $index, $value := .Values.sharding.extAccess.ports -}}
 ---

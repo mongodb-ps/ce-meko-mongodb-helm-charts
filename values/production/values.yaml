@@ -1,12 +1,12 @@
 ---
 
-clusterName: rs-0
+clusterName: clown-cluster
 
 mongoDBVersion: 5.0.13-ent
 
 
 sharding:
-  enabled: false
+  enabled: true
   shardSrv:
     shards: 2
     memberPerShard: 3
