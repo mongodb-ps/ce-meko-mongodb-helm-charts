@@ -117,6 +117,10 @@ replicaSet:
         port: 31252
         clusterIP: 10.43.125.22
 
+agent:
+  logLevel: DEBUG
+  startupOptions: ~
+
 logLevel: DEBUG
 
 auth:

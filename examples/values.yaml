@@ -1,14 +1,12 @@
 ---
 
-# Name of the cluster
-clusterName: rs-0
+clusterName: clown-cluster
 
-# MongoDB version
 mongoDBVersion: 5.0.13-ent
 
-# section for sharded clusters
+
 sharding:
-  enabled: false
+  enabled: true
   shardSrv:
     shards: 2
     memberPerShard: 3
@@ -78,7 +76,7 @@ sharding:
         port: 31299
         clusterIP: 10.43.125.29
 
-# section for replica sets
+
 replicaSet:
   enabled: true
   replicas: 3
@@ -119,9 +117,13 @@ replicaSet:
         port: 31252
         clusterIP: 10.43.125.22
 
+agent:
+  logLevel: DEBUG
+  startupOptions:
+    maxLogFiles: "30"
+
 logLevel: DEBUG
 
-# Authentication and authorisation
 auth:
   scram:
     enabled: true
@@ -136,7 +138,6 @@ auth:
     userToDNMapping: '[{ match: "(.+)@MONGODB.LOCAL", substitution: "cn={0},cn=Users,dc=mongodb,dc=local"}]'
     authzQueryTemplate: '{USER}?memberOf?base'
 
-# Ops Manager target
 opsManager:
   tlsEnabled: true
   baseUrl: https://mongod0.mongodb.local:8443
@@ -145,15 +146,17 @@ opsManager:
   omSecret: organization-secret
   caConfigmap: om-ca-cert
 
-# TLS settings
 tls:
   enabled: true
   caConfigMap: custom-ca
 
-# Password secret for root user
 mongoDBAdminPasswdSecret: dev-adm-passwd
 
-# Additional users to create
+kmip:
+  enabled: false
+  host: kmip-svc.mongodb.svc.cluster.local
+  port: 5696
+
 additionalUsers:
   - username: om-user
     passwdSecret: om-user

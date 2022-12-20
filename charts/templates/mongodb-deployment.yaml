@@ -17,6 +17,40 @@ spec:
   mongodsPerShardCount: {{ .Values.sharding.shardSrv.memberPerShard }}
   mongosCount: {{ .Values.sharding.mongos.count }}
   configServerCount: {{ .Values.sharding.configSrv.replicas }}
+  shard:
+    agent:
+      startupOptions:
+        logLevel: {{ .Values.agent.logLevel }}
+        {{- if (hasKey .Values.agent "startupOptions")}}
+        {{- range .Values.agent.startupOptions }}
+        {{ . }}
+        {{- end }}
+        {{- end }}
+    additionalMongodConfig: &mongodAdditionalConfigData 
+      {{- if .Values.tls.enabled }}
+      net:
+        tls:
+          mode: requireTLS
+          disabledProtocols: TLS1_0,TLS1_1
+      setParameter:
+        suppressNoTLSPeerCertificateWarning: true
+      {{- end }}
+      systemLog:
+        {{- if and (hasKey .Values "logLevel") (eq (upper .Values.logLevel) "DEBUG") }}
+        verbosity: 2
+        {{- else }}
+        verbosity: 0
+        {{- end }}
+        timeStampFormat: iso8601-local
+      {{- if .Values.kmip.enabled }}
+      security:
+        enableEncryption: true
+        kmip:
+          serverName: {{ .Values.kmip.host }}
+          port: {{ .Values.kmip.port }}
+          clientCertificateFile: /mongodb-automation/server.pem
+          serverCAFile: /mongodb-automation/ca.pem
+      {{- end }}
   shardPodSpec:
     podTemplate:
       spec:
@@ -28,7 +62,7 @@ spec:
             securityContext:
               runAsNonRoot: false
               runAsUser: 0
-            image: {{ .Values.sharding.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9" | quote }}
+            image: {{ .Values.sharding.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.13" | quote }}
             command: ["/bin/sh", "-c"]
             args:
             - chown 2000:2000 -R /data /journal /var/log/mongodb-mms-automation
@@ -54,24 +88,33 @@ spec:
                 cpu: {{ .Values.sharding.shardSrv.resources.requests.cpu }}
                 memory: {{ .Values.sharding.shardSrv.resources.requests.mem }}
       podAntiAffinityTopologyKey: "kubernetes.io/hostname"
-      persistence:
-        {{- if eq (.Values.sharding.shardSrv.storage.persistenceType | lower) "single"}}
-        single:
-          storage: {{ .Values.sharding.shardSrv.storage.single.size }}
-          storageClass: {{ .Values.sharding.shardSrv.storage.single.storageClass }}
-        {{- else }}
-        multiple:
-          data:
-            storage: {{ .Values.sharding.shardSrv.storage.multi.data.size }}
-            storageClass: {{ .Values.sharding.shardSrv.storage.multi.data.storageClass }}
-          journal:
-            storage: {{ .Values.sharding.shardSrv.storage.multi.journal.size }}
-            storageClass: {{ .Values.sharding.shardSrv.storage.multi.journal.storageClass }}
-          logs:
-            storage: {{ .Values.sharding.shardSrv.storage.multi.logs.size }}
-            storageClass: {{ .Values.sharding.shardSrv.storage.multi.logs.storageClass }}
+    persistence:
+      {{- if eq (.Values.sharding.shardSrv.storage.persistenceType | lower) "single"}}
+      single:
+        storage: {{ .Values.sharding.shardSrv.storage.single.size }}
+        storageClass: {{ .Values.sharding.shardSrv.storage.single.storageClass }}
+      {{- else }}
+      multiple:
+        data:
+          storage: {{ .Values.sharding.shardSrv.storage.multi.data.size }}
+          storageClass: {{ .Values.sharding.shardSrv.storage.multi.data.storageClass }}
+        journal:
+          storage: {{ .Values.sharding.shardSrv.storage.multi.journal.size }}
+          storageClass: {{ .Values.sharding.shardSrv.storage.multi.journal.storageClass }}
+        logs:
+          storage: {{ .Values.sharding.shardSrv.storage.multi.logs.size }}
+          storageClass: {{ .Values.sharding.shardSrv.storage.multi.logs.storageClass }}
+      {{- end }}
+  mongos:
+    agent:
+      startupOptions:
+        logLevel: {{ .Values.agent.logLevel }}
+        {{- if (hasKey .Values.agent "startupOptions")}}
+        {{- range .Values.agent.startupOptions }}
+        {{ . }}
         {{- end }}
-    additionalMongodConfig: &mongodAdditionalConfigData 
+        {{- end }}
+    additionalMongodConfig: 
       {{- if .Values.tls.enabled }}
       net:
         tls:
@@ -81,8 +124,10 @@ spec:
         suppressNoTLSPeerCertificateWarning: true
       {{- end }}
       systemLog:
-        {{- if eq (.Values.logLevel | upper) "DEBUG" }}
+        {{- if and (hasKey .Values "logLevel") (eq (upper .Values.logLevel) "DEBUG") }}
         verbosity: 2
+        {{- else }}
+        verbosity: 0
         {{- end }}
         timeStampFormat: iso8601-local
       {{- if .Values.kmip.enabled }}
@@ -111,7 +156,40 @@ spec:
                 cpu: {{ .Values.sharding.mongos.resources.requests.cpu }}
                 memory: {{ .Values.sharding.mongos.resources.requests.mem }}
     podAntiAffinityTopologyKey: "kubernetes.io/hostname"
-    additionalMongodConfig: *mongodAdditionalConfigData
+  configSrv:
+    agent:
+      startupOptions:
+        logLevel: {{ .Values.agent.logLevel }}
+        {{- if (hasKey .Values.agent "startupOptions")}}
+        {{- range .Values.agent.startupOptions }}
+        {{ . }}
+        {{- end }}
+        {{- end }}
+    additionalMongodConfig: 
+      {{- if .Values.tls.enabled }}
+      net:
+        tls:
+          mode: requireTLS
+          disabledProtocols: TLS1_0,TLS1_1
+      setParameter:
+        suppressNoTLSPeerCertificateWarning: true
+      {{- end }}
+      systemLog:
+        {{- if and (hasKey .Values "logLevel") (eq (upper .Values.logLevel) "DEBUG") }}
+        verbosity: 2
+        {{- else }}
+        verbosity: 0
+        {{- end }}
+        timeStampFormat: iso8601-local
+      {{- if .Values.kmip.enabled }}
+      security:
+        enableEncryption: true
+        kmip:
+          serverName: {{ .Values.kmip.host }}
+          port: {{ .Values.kmip.port }}
+          clientCertificateFile: /mongodb-automation/server.pem
+          serverCAFile: /mongodb-automation/ca.pem
+      {{- end }}
   configSrvPodSpec:
     podTemplate:
       spec:
@@ -123,7 +201,7 @@ spec:
             securityContext:
               runAsNonRoot: false
               runAsUser: 0
-            image: {{ .Values.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9" | quote }}
+            image: {{ .Values.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.13" | quote }}
             command: ["/bin/sh", "-c"]
             args:
             - chown 2000:2000 -R /data /journal /var/log/mongodb-mms-automation
@@ -149,24 +227,23 @@ spec:
                 cpu: {{ .Values.sharding.configSrv.resources.requests.cpu }}
                 memory: {{ .Values.sharding.configSrv.resources.requests.mem }}
       podAntiAffinityTopologyKey: "kubernetes.io/hostname"
-      persistence:
-        {{- if eq (.Values.sharding.configSrv.storage.persistenceType | lower) "single"}}
-        single:
-          storage: {{ .Values.sharding.configSrv.storage.single.size }}
-          storageClass: {{ .Values.sharding.configSrv.storage.single.storageClass }}
-        {{- else }}
-        multiple:
-          data:
-            storage: {{ .Values.sharding.configSrv.storage.multi.data.size }}
-            storageClass: {{ .Values.sharding.configSrv.storage.multi.data.storageClass }}
-          journal:
-            storage: {{ .Values.sharding.configSrv.storage.multi.journal.size }}
-            storageClass: {{ .Values.sharding.configSrv.storage.multi.journal.storageClass }}
-          logs:
-            storage: {{ .Values.sharding.configSrv.storage.multi.logs.size }}
-            storageClass: {{ .Values.sharding.configSrv.storage.multi.logs.storageClass }}
-        {{- end }}
-    additionalMongodConfig: *mongodAdditionalConfigData
+    persistence:
+      {{- if eq (.Values.sharding.configSrv.storage.persistenceType | lower) "single"}}
+      single:
+        storage: {{ .Values.sharding.configSrv.storage.single.size }}
+        storageClass: {{ .Values.sharding.configSrv.storage.single.storageClass }}
+      {{- else }}
+      multiple:
+        data:
+          storage: {{ .Values.sharding.configSrv.storage.multi.data.size }}
+          storageClass: {{ .Values.sharding.configSrv.storage.multi.data.storageClass }}
+        journal:
+          storage: {{ .Values.sharding.configSrv.storage.multi.journal.size }}
+          storageClass: {{ .Values.sharding.configSrv.storage.multi.journal.storageClass }}
+        logs:
+          storage: {{ .Values.sharding.configSrv.storage.multi.logs.size }}
+          storageClass: {{ .Values.sharding.configSrv.storage.multi.logs.storageClass }}
+      {{- end }}
   {{- if and (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true)}}
   exposedExternally: true
   {{- end }}
@@ -184,7 +261,7 @@ spec:
             securityContext:
               runAsNonRoot: false
               runAsUser: 0
-            image: {{ .Values.replicaSet.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9" | quote }}
+            image: {{ .Values.replicaSet.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.13" | quote }}
             command: ["/bin/sh", "-c"]
             args:
             - chown 2000:2000 -R /data /journal /var/log/mongodb-mms-automation
@@ -261,7 +338,12 @@ spec:
   {{- end }}
   agent:
     startupOptions:
-      logLevel: {{ .Values.logLevel }}
+      logLevel: {{ .Values.agent.logLevel }}
+      {{- if (hasKey .Values.agent "startupOptions")}}
+      {{- range .Values.agent.startupOptions }}
+      {{ . }}
+      {{- end }}
+      {{- end }}
   security:
     authentication:
       enabled: true
