@@ -11,6 +11,7 @@ spec:
       name: project-{{ .Values.opsManager.projectName | lower }}
   credentials: {{ .Values.opsManager.omSecret }}
   persistent: true
+  {{- /* Test for sharded cluster, this take precedence over replica set */ -}}
   {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true)}}
   type: ShardedCluster
   shardCount: {{ .Values.sharding.shardSrv.shards }}
@@ -26,7 +27,7 @@ spec:
         {{ . }}
         {{- end }}
         {{- end }}
-    additionalMongodConfig: &mongodAdditionalConfigData 
+    additionalMongodConfig:
       {{- if .Values.tls.enabled }}
       net:
         tls:
@@ -114,7 +115,7 @@ spec:
         {{ . }}
         {{- end }}
         {{- end }}
-    additionalMongodConfig: 
+    additionalMongodConfig: &mongodAdditionalConfigData 
       {{- if .Values.tls.enabled }}
       net:
         tls:
@@ -165,7 +166,7 @@ spec:
         {{ . }}
         {{- end }}
         {{- end }}
-    additionalMongodConfig: 
+    additionalMongodConfig: &mongodAdditionalConfigData 
       {{- if .Values.tls.enabled }}
       net:
         tls:
