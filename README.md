@@ -45,7 +45,6 @@
     - [Replica Set External Access, Services and Horizons](#replica-set-external-access-services-and-horizons)
     - [Encryption At Rest - this is currently non-fucntional due to changes](#encryption-at-rest---this-is-currently-non-fucntional-due-to-changes)
     - [Settings](#settings-2)
-    - [Settings](#settings-3)
       - [resources.limits.cpu](#resourceslimitscpu)
       - [resources.limits.mem](#resourceslimitsmem)
       - [resources.requests.cpu](#resourcesrequestscpu)
@@ -500,9 +499,6 @@ The following table describes the values required in the relevant `values.yaml` 
 |replicaSet.extAccess.ports[n].horizonName|Name of the MongoDB Horizon for the member|
 |replicaSet.extAccess.ports[n].port|The port of the MongoDB horizon. It is either the NodePort port or the LoadBalancer port|
 |replicaSet.extAccess.ports[n].clusterIP|The clusterIP of the NodePort. Not required if `LoadBalancer` is the selected method|
-
-### Settings
-
 
 #### resources.limits.cpu
 
