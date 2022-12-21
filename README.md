@@ -5,18 +5,19 @@
   - [Table of Contents](#table-of-contents)
   - [Compatability](#compatability)
 - [Breaking Changes](#breaking-changes)
-  - [Description](#description)
-  - [Steps to Deploy](#steps-to-deploy)
+- [Description](#description)
+- [Steps to Deploy](#steps-to-deploy)
   - [Prerequisites](#prerequisites)
   - [Set Up](#set-up)
   - [Deployment Requirements](#deployment-requirements)
     - [Ops Manager API Access Token _REQUIRED_](#ops-manager-api-access-token-required)
     - [CA Certificate for Ops Manager _REQUIRED_](#ca-certificate-for-ops-manager-required)
+- [Settings](#settings)
   - [Common Settings](#common-settings)
     - [CA Certificate for MongoDB Deployments _HIGHLY ENCOURAGED_](#ca-certificate-for-mongodb-deployments-highly-encouraged)
     - [MongoDB First User _REQUIRED_](#mongodb-first-user-required)
     - [LDAP Authentication and Authorisation](#ldap-authentication-and-authorisation)
-    - [Settings](#settings)
+    - [Settings](#settings-1)
       - [clusterName](#clustername)
       - [mongoDBVersion](#mongodbversion)
       - [mongoDBFCV](#mongodbfcv)
@@ -43,8 +44,8 @@
     - [TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_](#tls-x509-certificates-for-mongodb-deployments-highly-encouraged)
     - [Replica Set External Access, Services and Horizons](#replica-set-external-access-services-and-horizons)
     - [Encryption At Rest - this is currently non-fucntional due to changes](#encryption-at-rest---this-is-currently-non-fucntional-due-to-changes)
-    - [Settings](#settings-1)
     - [Settings](#settings-2)
+    - [Settings](#settings-3)
       - [resources.limits.cpu](#resourceslimitscpu)
       - [resources.limits.mem](#resourceslimitsmem)
       - [resources.requests.cpu](#resourcesrequestscpu)
@@ -71,7 +72,7 @@
     - [kmip.enabled](#kmipenabled)
     - [kmip.host](#kmiphost)
     - [kmip.port](#kmipport)
-  - [Sharding Specific Settings](#sharding-specific-settings)
+  - [Sharded Cluster Specific Settings](#sharded-cluster-specific-settings)
     - [TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_](#tls-x509-certificates-for-mongodb-deployments-highly-encouraged-1)
       - [Shard Members](#shard-members)
   - [Predeployment Checklist](#predeployment-checklist)
@@ -87,13 +88,13 @@ This version of the Helm charts has been tested with MongoDB Kubernetes Operator
 
 This version adds values for sharded clusters and moves replica set-specific settings to its own object.
 
-## Description
+# Description
 
 The series of Helm Charts to deploy MongoDB Enterprise Advanced replica sets within Kubernetes with the MongoDB Kubernetes Operator and Ops Manager.
 
 The `/examples` directory has `values.yaml` examples for replica sets and sharded clusters.
 
-## Steps to Deploy
+# Steps to Deploy
 
 1. Ensure [Prerequisites](#prerequisites) are met
 2. Create [Ops Manager Access Token](#ops-manager-api-access-token-required) (Progammatic Access)
@@ -153,6 +154,8 @@ kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create configmap <name-of-conf
 ```
 
 This is most likely common in all MongoDB deployments.
+
+# Settings
 
 ## Common Settings
 
@@ -626,7 +629,7 @@ The FQDN if the KMIP device/service.
 
 The port number of the KMIP device/service, normally 5696.
 
-## Sharding Specific Settings
+## Sharded Cluster Specific Settings
 
 ### TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_
 
