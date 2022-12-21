@@ -6,7 +6,7 @@ mongoDBVersion: 5.0.13-ent
 
 
 sharding:
-  enabled: true
+  enabled: false
   shardSrv:
     shards: 2
     memberPerShard: 3

@@ -12,7 +12,7 @@ spec:
   credentials: {{ .Values.opsManager.omSecret }}
   persistent: true
   {{- /* Test for sharded cluster, this take precedence over replica set */ -}}
-  {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true)}}
+  {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq (.Values.sharding.enabled  | default false) true)}}
   type: ShardedCluster
   shardCount: {{ .Values.sharding.shardSrv.shards }}
   mongodsPerShardCount: {{ .Values.sharding.shardSrv.memberPerShard }}
