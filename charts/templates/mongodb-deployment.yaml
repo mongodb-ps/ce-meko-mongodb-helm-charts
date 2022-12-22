@@ -115,7 +115,7 @@ spec:
         {{ . }}
         {{- end }}
         {{- end }}
-    additionalMongodConfig: &mongodAdditionalConfigData 
+    additionalMongodConfig:
       {{- if .Values.tls.enabled }}
       net:
         tls:
@@ -166,7 +166,7 @@ spec:
         {{ . }}
         {{- end }}
         {{- end }}
-    additionalMongodConfig: &mongodAdditionalConfigData 
+    additionalMongodConfig: 
       {{- if .Values.tls.enabled }}
       net:
         tls:

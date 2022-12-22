@@ -17,7 +17,7 @@
     - [CA Certificate for MongoDB Deployments _HIGHLY ENCOURAGED_](#ca-certificate-for-mongodb-deployments-highly-encouraged)
     - [MongoDB First User _REQUIRED_](#mongodb-first-user-required)
     - [LDAP Authentication and Authorisation](#ldap-authentication-and-authorisation)
-    - [Settings](#settings-1)
+    - [Options](#options)
       - [clusterName](#clustername)
       - [mongoDBVersion](#mongodbversion)
       - [mongoDBFCV](#mongodbfcv)
@@ -38,30 +38,30 @@
       - [opsManager.projectName](#opsmanagerprojectname)
       - [opsManager.omSecret](#opsmanageromsecret)
       - [opsManager.caConfigmap](#opsmanagercaconfigmap)
-    - [mongoDBAdminPasswdSecret](#mongodbadminpasswdsecret)
-    - [additionalUsers](#additionalusers)
+      - [mongoDBAdminPasswdSecret](#mongodbadminpasswdsecret)
+      - [additionalUsers](#additionalusers)
   - [Replica Set Specific Settings](#replica-set-specific-settings)
     - [TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_](#tls-x509-certificates-for-mongodb-deployments-highly-encouraged)
-    - [Replica Set External Access, Services and Horizons](#replica-set-external-access-services-and-horizons)
-    - [Encryption At Rest - this is currently non-fucntional due to changes](#encryption-at-rest---this-is-currently-non-fucntional-due-to-changes)
-    - [Settings](#settings-2)
-      - [resources.limits.cpu](#resourceslimitscpu)
-      - [resources.limits.mem](#resourceslimitsmem)
-      - [resources.requests.cpu](#resourcesrequestscpu)
-      - [resources.requests.mem](#resourcesrequestsmem)
-      - [storage.persistenceType](#storagepersistencetype)
-    - [storage.nfs](#storagenfs)
-    - [storage.nfsInitImage](#storagenfsinitimage)
-    - [storage.single.size](#storagesinglesize)
-    - [storage.single.storageClass](#storagesinglestorageclass)
-    - [storage.multi.data.size](#storagemultidatasize)
-    - [storage.multi.data.storageClass](#storagemultidatastorageclass)
-    - [storage.multi.journal.size](#storagemultijournalsize)
-    - [storage.multi.journal.storageClass](#storagemultijournalstorageclass)
-    - [storage.multi.logs.size](#storagemultilogssize)
-    - [storage.multi.logs.storageClass](#storagemultilogsstorageclass)
     - [tlsEnabled.enabled](#tlsenabledenabled)
     - [tlsEnabled.caConfigMap](#tlsenabledcaconfigmap)
+    - [Replica Set External Access, Services and Horizons](#replica-set-external-access-services-and-horizons)
+    - [Encryption At Rest - this is currently non-fucntional due to changes](#encryption-at-rest---this-is-currently-non-fucntional-due-to-changes)
+    - [Options](#options-1)
+      - [replicaSet.resources.limits.cpu](#replicasetresourceslimitscpu)
+      - [replicaSet.resources.limits.mem](#replicasetresourceslimitsmem)
+      - [replicaSet.resources.requests.cpu](#replicasetresourcesrequestscpu)
+      - [replicaSet.resources.requests.mem](#replicasetresourcesrequestsmem)
+      - [replicaSet.storage.persistenceType](#replicasetstoragepersistencetype)
+      - [replicaSet.storage.nfs](#replicasetstoragenfs)
+      - [replicaSet.storage.nfsInitImage](#replicasetstoragenfsinitimage)
+      - [replicaSet.storage.single.size](#replicasetstoragesinglesize)
+      - [replicaSet.storage.single.storageClass](#replicasetstoragesinglestorageclass)
+      - [replicaSet.storage.multi.data.size](#replicasetstoragemultidatasize)
+      - [replicaSet.storage.multi.data.storageClass](#replicasetstoragemultidatastorageclass)
+    - [replicaSet.storage.multi.journal.size](#replicasetstoragemultijournalsize)
+    - [replicaSet.storage.multi.journal.storageClass](#replicasetstoragemultijournalstorageclass)
+    - [replicaSet.storage.multi.logs.size](#replicasetstoragemultilogssize)
+    - [replicaSet.storage.multi.logs.storageClass](#replicasetstoragemultilogsstorageclass)
     - [extAccess.enabled](#extaccessenabled)
     - [extAccess.exposeMethod](#extaccessexposemethod)
     - [extAccess.ports](#extaccessports)
@@ -218,6 +218,8 @@ If LDAP authorisation is desired query must be provided to determine the groups 
 
 If LDAP authorisation is not required this setting can be skipped.
 
+### Options
+
 The following table describes the common values required in the relevant `values.yaml` for both replica sets and sharded clusters:
 
 |Key|Purpose|
@@ -252,8 +254,6 @@ The following table describes the common values required in the relevant `values
 |kmip.enabled|Boolean determining if KMIP is enabled for the MongoDB deployment|
 |kmip.host|The host address of the KMIP device|
 |kmip.port|The port of the KMIP device|
-
-### Settings
 
 #### clusterName
 
@@ -360,13 +360,13 @@ This can be a common configmap if more than one deployment is in a Kubernetes na
 
 See the [Deployment Requirements](#ca-certificate-for-ops-manager-required) section for details on creating this configmap.
 
-### mongoDBAdminPasswdSecret
+#### mongoDBAdminPasswdSecret
 
 This is the secret name that contains the password for the first user.
 
 See the [Deployment Requirements](#mongodb-first-user-required) section for details on creating this secret.
 
-### additionalUsers
+#### additionalUsers
 
 This is an array of additional data base users to create. The format is as follows:
 
@@ -443,6 +443,16 @@ kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<cluster
 
 **REQUIRED** if `tls.enabled` is `true`.
 
+### tlsEnabled.enabled
+
+A boolean to determine if TLS is enabled for MongoDB deployments, which is should be!
+
+### tlsEnabled.caConfigMap
+
+The name of the configmap that contains the X.509 certificate of the Certificate Authority that use used for TLS communications to and from the MongoDB instances.
+
+See the [Deployment Requirements](#ca-certificate-for-mongodb-deployments-highly-encouraged) section for details on creating this configmap.
+
 
 ### Replica Set External Access, Services and Horizons
 
@@ -471,7 +481,7 @@ Ensure to set the FQDN (`kmip.host`) and port (`kmip.port`) of the KMIP device/s
 
 The pod's X.509 PEM file can CA certificate will be used for authentication to the KMIP device/service.
 
-### Settings
+### Options
 
 The following table describes the values required in the relevant `values.yaml` specifically for replica sets:
 
@@ -500,36 +510,36 @@ The following table describes the values required in the relevant `values.yaml` 
 |replicaSet.extAccess.ports[n].port|The port of the MongoDB horizon. It is either the NodePort port or the LoadBalancer port|
 |replicaSet.extAccess.ports[n].clusterIP|The clusterIP of the NodePort. Not required if `LoadBalancer` is the selected method|
 
-#### resources.limits.cpu
+#### replicaSet.resources.limits.cpu
 
 The maximum number of CPUs that can be assigned to each pod specified as either an integer, float, or with the `m` suffix (for milliCPUS).
 
-#### resources.limits.mem
+#### replicaSet.resources.limits.mem
 
 The maximum memory that can be assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-#### resources.requests.cpu
+#### replicaSet.resources.requests.cpu
 
 The initial number of CPUs that is assigned to each pod specified as either an integer, float, or with the `m` suffix (for milliCPUS).
 
-#### resources.requests.mem
+#### replicaSet.resources.requests.mem
 
 The initial memory that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-#### storage.persistenceType
+#### replicaSet.storage.persistenceType
 
 The type of storage for the pod. Select `single` for data, journal, and logs to be on one partition. If this is select both `storage.single.size` and `storage.single.storageClass` must be provided.
 
 If separate partitions are required for data, journal, and logs then select `multi`, and then provide all the following:
 
-* `storage.multi.data.size`
-* `storage.multi.data.storageClass`
-* `storage.multi.journal.size`
-* `storage.multi.journal.storageClass`
-* `storage.multi.logs.size`
-* `storage.multi.logs.storageClass`
+* `replicaSet.storage.multi.data.size`
+* `replicaSet.storage.multi.data.storageClass`
+* `replicaSet.storage.multi.journal.size`
+* `replicaSet.storage.multi.journal.storageClass`
+* `replicaSet.storage.multi.logs.size`
+* `replicaSet.storage.multi.logs.storageClass`
 
-### storage.nfs
+#### replicaSet.storage.nfs
 
 A boolean to determine if NFS is used as the persistent storage. If this is `true` then an additional init container is prepended to the init container array in the statefulSet to that will `chown`` the permissions of the NFS mount to be that of the mongod user. The Kubernetes Operator uses 2000:2000 for the UID and GID of the mongod user.
 
@@ -539,53 +549,43 @@ This will chown `/data`, `/journal` and `/var/log/mongodb-mms-automation` to 200
 
 Default is `false`
 
-### storage.nfsInitImage
+#### replicaSet.storage.nfsInitImage
 
 The image to use for the inint container to perform the `chown` on the NFS mounts.
 
 The default is `quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9"`
 
-### storage.single.size
+#### replicaSet.storage.single.size
 
 The persistent storage that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### storage.single.storageClass
+#### replicaSet.storage.single.storageClass
 
 The name of the storage class that is used to create the persistentVolumeClaim for the data partition.
 
-### storage.multi.data.size
+#### replicaSet.storage.multi.data.size
 
 The persistent storage that is assigned to each pod for data storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### storage.multi.data.storageClass
+#### replicaSet.storage.multi.data.storageClass
 
 The name of the storage class that is used to create the persistentVolumeClaim for the journal partition.
 
-### storage.multi.journal.size
+### replicaSet.storage.multi.journal.size
 
 The persistent storage that is assigned to each pod for journal storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### storage.multi.journal.storageClass
+### replicaSet.storage.multi.journal.storageClass
 
 The name of the storage class that is used to create the persistentVolumeClaim for the log partition.
 
-### storage.multi.logs.size
+### replicaSet.storage.multi.logs.size
 
 The persistent storage that is assigned to each pod for log storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### storage.multi.logs.storageClass
+### replicaSet.storage.multi.logs.storageClass
 
 The name of the storage class that is used to create the persistentVolumeClaim.
-
-### tlsEnabled.enabled
-
-A boolean to determine if TLS is enabled for MongoDB deployments, which is should be!
-
-### tlsEnabled.caConfigMap
-
-The name of the configmap that contains the X.509 certificate of the Certificate Authority that use used for TLS communications to and from the MongoDB instances.
-
-See the [Deployment Requirements](#ca-certificate-for-mongodb-deployments-highly-encouraged) section for details on creating this configmap.
 
 ### extAccess.enabled
 

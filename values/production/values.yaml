@@ -6,7 +6,7 @@ mongoDBVersion: 5.0.13-ent
 
 
 sharding:
-  enabled: false
+  enabled: true
   shardSrv:
     shards: 2
     memberPerShard: 3
@@ -47,7 +47,7 @@ sharding:
       persistenceType: single
       single:
         size: 1Gi
-        storageClass: data
+        storageClass: csrs
       multi:
         data:
           size: 5Gi
