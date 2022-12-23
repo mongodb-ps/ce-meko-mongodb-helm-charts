@@ -19,20 +19,20 @@ sharding:
         mem: 2Gi
     storage:
       nfs: false
-      persistenceType: single
+      persistenceType: multi
       single:
         size: 2Gi
         storageClass: data
       multi:
         data:
           size: 5Gi
-          storageClass: dataClass
+          storageClass: data
         journal:
           size: 5Gi
-          storageClass: journalClass
+          storageClass: journal
         logs:
           size: 5Gi
-          storageClass: logClass
+          storageClass: logs
   configSrv:
     replicas: 3
     resources:
@@ -71,10 +71,6 @@ sharding:
     enabled: true
     externalDomains:
     - "mongodb.local"
-    ports:
-      - horizonName: "clown-cluster.mongodb.local"
-        port: 31299
-        clusterIP: 10.43.125.29
 
 
 replicaSet:

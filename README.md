@@ -15,6 +15,8 @@
 - [Settings](#settings)
   - [Common Settings](#common-settings)
     - [CA Certificate for MongoDB Deployments _HIGHLY ENCOURAGED_](#ca-certificate-for-mongodb-deployments-highly-encouraged)
+    - [tlsEnabled.enabled](#tlsenabledenabled)
+    - [tlsEnabled.caConfigMap](#tlsenabledcaconfigmap)
     - [MongoDB First User _REQUIRED_](#mongodb-first-user-required)
     - [LDAP Authentication and Authorisation](#ldap-authentication-and-authorisation)
     - [Options](#options)
@@ -42,8 +44,6 @@
       - [additionalUsers](#additionalusers)
   - [Replica Set Specific Settings](#replica-set-specific-settings)
     - [TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_](#tls-x509-certificates-for-mongodb-deployments-highly-encouraged)
-    - [tlsEnabled.enabled](#tlsenabledenabled)
-    - [tlsEnabled.caConfigMap](#tlsenabledcaconfigmap)
     - [Replica Set External Access, Services and Horizons](#replica-set-external-access-services-and-horizons)
     - [Encryption At Rest - this is currently non-fucntional due to changes](#encryption-at-rest---this-is-currently-non-fucntional-due-to-changes)
     - [Options](#options-1)
@@ -71,9 +71,11 @@
     - [kmip.enabled](#kmipenabled)
     - [kmip.host](#kmiphost)
     - [kmip.port](#kmipport)
-  - [Sharded Cluster Specific Settings](#sharded-cluster-specific-settings)
+  - [Sharded Cluster Specific SettingsThe following are settings required if a replica set is to be deployed.](#sharded-cluster-specific-settingsthe-following-are-settings-required-if-a-replica-set-is-to-be-deployed)
     - [TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_](#tls-x509-certificates-for-mongodb-deployments-highly-encouraged-1)
       - [Shard Members](#shard-members)
+      - [Config Server Replica Set](#config-server-replica-set)
+      - [Mongos](#mongos)
   - [Predeployment Checklist](#predeployment-checklist)
   - [Run](#run)
 
@@ -172,6 +174,16 @@ kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create configmap <name-of-conf
 This is most likely common in all MongoDB deployments.
 
 **REQUIRED** if `tls.enabled` is `true`.
+
+### tlsEnabled.enabled
+
+A boolean to determine if TLS is enabled for MongoDB deployments, which is should be!
+
+### tlsEnabled.caConfigMap
+
+The name of the configmap that contains the X.509 certificate of the Certificate Authority that use used for TLS communications to and from the MongoDB instances.
+
+See the [Deployment Requirements](#ca-certificate-for-mongodb-deployments-highly-encouraged) section for details on creating this configmap.
 
 ### MongoDB First User _REQUIRED_
 
@@ -443,17 +455,6 @@ kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<cluster
 
 **REQUIRED** if `tls.enabled` is `true`.
 
-### tlsEnabled.enabled
-
-A boolean to determine if TLS is enabled for MongoDB deployments, which is should be!
-
-### tlsEnabled.caConfigMap
-
-The name of the configmap that contains the X.509 certificate of the Certificate Authority that use used for TLS communications to and from the MongoDB instances.
-
-See the [Deployment Requirements](#ca-certificate-for-mongodb-deployments-highly-encouraged) section for details on creating this configmap.
-
-
 ### Replica Set External Access, Services and Horizons
 
 If external access (e.g. access from external to Kubernetes) is required a NodePort or LoadBalancer service can be created for each replica set member and a MongoDB Split Horizon associated with each replica set member. The MongoDB Split Horizon provides a different view of the cluster when `isMaster` is exeecuted depending on the address used in the connection string. This allows the discovery process to present the addresses of the replica set members as they should be viewed external to Kubernetes.
@@ -625,7 +626,16 @@ The FQDN if the KMIP device/service.
 
 The port number of the KMIP device/service, normally 5696.
 
-## Sharded Cluster Specific Settings
+## Sharded Cluster Specific SettingsThe following are settings required if a replica set is to be deployed.
+
+To ensure a sharded cluster is deployed set the following:
+
+```
+replicaSet:
+  enabled: false
+sharding:
+  enabled: true
+```
 
 ### TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_
 
@@ -634,12 +644,13 @@ This requires AT LEAST six secrets. For each eash shard, config server replica s
 The secrets contain the X.509 key and certificate. One key/certificate pair is used for all members of the replica set/shard/mongos pool, therefore a Subject Alternate Name (SAN) entry must exist for each member of the replica set/shard/mongos. The SANs will be in the form of:
 
 #### Shard Members
+
 The SAN FQDN for each shard member is as follows:
 **\<clusterName\>-\<X\>-<Y>.\<clusterName\>-svc.\<namespace\>.svc.cluster.local**
 
 Where `<clusterName>` is the `clusterName` in the `values.yaml` for your deployment and `<X>` is the 0-based number of the shard and `<Y>` is the 0-based number of the shard member.
 
-The certificates must include the name of FQDN external to Kubernetes as a Subject Alternate Name (SAN) if external access is required. 
+The certificate must include the name of FQDN external to Kubernetes as a Subject Alternate Name (SAN) if external access is required (`sharding.extAccess.enabled` set to `true`), plus an FQDN for each shard member for each domain set via `sharding.extAccess.externalDomains`.
 
 The secrets must be named as follows:
 
@@ -649,14 +660,80 @@ The secrets must be named as follows:
 
 Where `<X>` is the shard number.
 
-The two secrets can be created as follows:
+The two secrets for each shard can be created as follows:
 
 ```shell
-kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<clusterName><X>-cert \
+kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<clusterName>-<X>-cert \
   --cert=<path-to-cert> \
   --key=<path-to-key>
 
 kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<clusterName>-<X>-clusterfile \
+  --cert=<path-to-cert> \
+  --key=<path-to-key>
+```
+
+**REQUIRED** if `tls.enabled` is `true`.
+
+#### Config Server Replica Set
+
+A single X509 key and certificate is required for the Config Server Replica Set. These will be used to create two secrets: one for client communications and one for intra-replica set authentication. The FQDN of each replica set member must be in the certificate as a Subject Alternate Name (SAN).
+
+The SAN FQDN for each shard member is as follows:
+
+**\<clusterName\>-config-\<X\>.\<clusterName\>-svc.\<namespace\>.svc.cluster.local**
+
+Where `<clusterName>` is the `clusterName` in the `values.yaml` for your deployment and `<X>` is the 0-based number of the replica set member.
+
+The certificate must include the name of FQDN external to Kubernetes as a Subject Alternate Name (SAN) if external access is required (`sharding.extAccess.enabled` set to `true`), plus an FQDN for each config server replica set member for each domain set via `sharding.extAccess.externalDomains`.
+
+The secrets must be named as follows:
+
+**mdb-<clusterName\>-config-\<cert\>**
+
+**mdb-<clusterName\>-config-\<clusterfile\>**
+
+The two secrets for the config server replica set can be created as follows:
+
+```shell
+kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<clusterName>-config-cert \
+  --cert=<path-to-cert> \
+  --key=<path-to-key>
+
+kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<clusterName>-config-clusterfile \
+  --cert=<path-to-cert> \
+  --key=<path-to-key>
+```
+
+**REQUIRED** if `tls.enabled` is `true`.
+
+#### Mongos
+
+A single X509 key and certificate is required for all the mongos instances in the cluster. These will be used to create two secrets: one for client communications and one for intra-replica set authentication. The FQDN of each mongos instance must be in the certificate as a Subject Alternate Name (SAN).
+
+Two secrets are required for the collective of mongos instances in the cluster (not one per mongos).
+
+The SAN FQDN for each of the mongoses is as follows:
+
+**\<clusterName\>-svc-\<X\>.\<clusterName\>-svc.\<namespace\>.svc.cluster.local**
+
+Where `<clusterName>` is the `clusterName` in the `values.yaml` for your deployment and `<X>` is the 0-based number of the mongos instance.
+
+The certificate must include the name of FQDN external to Kubernetes as a Subject Alternate Name (SAN) if external access is required (`sharding.extAccess.enabled` set to `true`), plus an FQDN for each mongos for each domain set via `sharding.extAccess.externalDomains`.
+
+The secrets must be named as follows:
+
+**mdb-<clusterName\>-svc-\<cert\>**
+
+**mdb-<clusterName\>-svc-\<clusterfile\>**
+
+The two secrets for the config server replica set can be created as follows:
+
+```shell
+kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<clusterName>-config-cert \
+  --cert=<path-to-cert> \
+  --key=<path-to-key>
+
+kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<clusterName>-config-clusterfile \
   --cert=<path-to-cert> \
   --key=<path-to-key>
 ```
