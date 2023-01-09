@@ -72,7 +72,7 @@
     - [kmip.enabled](#kmipenabled)
     - [kmip.host](#kmiphost)
     - [kmip.port](#kmipport)
-  - [Sharded Cluster Specific SettingsThe following are settings required if a replica set is to be deployed.](#sharded-cluster-specific-settingsthe-following-are-settings-required-if-a-replica-set-is-to-be-deployed)
+  - [Sharded Cluster Specific Settings](#sharded-cluster-specific-settings)
     - [TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_](#tls-x509-certificates-for-mongodb-deployments-highly-encouraged-1)
       - [Shard Members](#shard-members)
       - [Config Server Replica Set](#config-server-replica-set)
@@ -672,7 +672,9 @@ The FQDN if the KMIP device/service.
 
 The port number of the KMIP device/service, normally 5696.
 
-## Sharded Cluster Specific SettingsThe following are settings required if a replica set is to be deployed.
+## Sharded Cluster Specific Settings
+
+The following are settings required if a replica set is to be deployed.
 
 To ensure a sharded cluster is deployed set the following:
 
