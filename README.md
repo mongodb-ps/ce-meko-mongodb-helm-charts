@@ -95,8 +95,6 @@
     - [sharding.shardSrv.storage.multi.journal.storageClass](#shardingshardsrvstoragemultijournalstorageclass)
     - [sharding.shardSrv.storage.multi.logs.size](#shardingshardsrvstoragemultilogssize)
     - [sharding.shardSrv.storage.multi.logs.storageClass](#shardingshardsrvstoragemultilogsstorageclass)
-    - [sharding.shardSrv.extAccess.enabled](#shardingshardsrvextaccessenabled)
-    - [sharding.shardSrv.extAccess.exposeMethod](#shardingshardsrvextaccessexposemethod)
       - [sharding.configSrv.replicas](#shardingconfigsrvreplicas)
       - [sharding.configSrv.resources.limits.cpu](#shardingconfigsrvresourceslimitscpu)
       - [sharding.configSrv.resources.limits.mem](#shardingconfigsrvresourceslimitsmem)
@@ -113,15 +111,13 @@
     - [sharding.configSrv.storage.multi.journal.storageClass](#shardingconfigsrvstoragemultijournalstorageclass)
     - [sharding.configSrv.storage.multi.logs.size](#shardingconfigsrvstoragemultilogssize)
     - [sharding.configSrv.storage.multi.logs.storageClass](#shardingconfigsrvstoragemultilogsstorageclass)
-    - [sharding.configSrv.extAccess.enabled](#shardingconfigsrvextaccessenabled)
-    - [sharding.configSrv.extAccess.exposeMethod](#shardingconfigsrvextaccessexposemethod)
       - [sharding.mongos.count](#shardingmongoscount)
       - [sharding.mongos.resources.limits.cpu](#shardingmongosresourceslimitscpu)
       - [sharding.mongos.resources.limits.mem](#shardingmongosresourceslimitsmem)
       - [sharding.mongos.resources.requests.cpu](#shardingmongosresourcesrequestscpu)
       - [sharding.mongos.resources.requests.mem](#shardingmongosresourcesrequestsmem)
-    - [sharding.mongos.extAccess.enabled](#shardingmongosextaccessenabled)
-    - [sharding.mongos.extAccess.exposeMethod](#shardingmongosextaccessexposemethod)
+    - [sharding.extAccess.enabled](#shardingextaccessenabled)
+    - [sharding.extAccess.exposeMethod](#shardingextaccessexposemethod)
   - [Predeployment Checklist](#predeployment-checklist)
   - [Run](#run)
 
@@ -814,12 +810,6 @@ The following table describes the values required in the relevant `values.yaml` 
 |sharding.shardSrv.storage.multi.journal.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database journal. Default is ""|
 |sharding.shardSrv.storage.multi.logs.size|The size of the volume for database logs, include units|
 |sharding.shardSrv.storage.multi.logs.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database logs. Default is ""|
-|sharding.shardSrv.extAccess.enabled|Boolean determining of MongoDB Split Horizon is enabled|
-|sharding.shardSrv.extAccess.exposeMethod|The method to expose access MongoDB to clients externally to Kubernetes. The options are `NodePort` or `LoadBalancer`|
-|sharding.shardSrv.extAccess.ports|Array of objects describing horizone names with associated port addresses, and clouterIP if required. One entry is required per replica set member|
-|sharding.shardSrv.extAccess.ports[n].horizonName|Name of the MongoDB Horizon for the member|
-|sharding.shardSrv.extAccess.ports[n].port|The port of the MongoDB horizon. It is either the NodePort port or the LoadBalancer port|
-|sharding.configSrv.extAccess.ports[n].clusterIP|The clusterIP of the NodePort. Not required if `LoadBalancer` is the selected method|
 |sharding.configSrv.replicas|Number of members for the config server replica set (integer)|
 |sharding.configSrv.resources.limits.cpu|The max CPU the containers can be allocated|
 |sharding.configSrv.resources.limits.mem|The max memory the containers can be allocated, include units|
@@ -836,13 +826,11 @@ The following table describes the values required in the relevant `values.yaml` 
 |sharding.configSrv.storage.multi.journal.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database journal. Default is ""|
 |sharding.configSrv.storage.multi.logs.size|The size of the volume for database logs, include units|
 |sharding.configSrv.storage.multi.logs.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database logs. Default is ""|
-|sharding.configSrv.extAccess.enabled|Boolean determining of MongoDB Split Horizon is enabled|
 |sharding.mongos.count|Number of mongos instances to deploy replica set (integer)|
 |sharding.mongos.resources.limits.cpu|The max CPU the containers can be allocated|
 |sharding.mongos.resources.limits.mem|The max memory the containers can be allocated, include units|
 |sharding.mongos.resources.requests.cpu|The initial CPU the containers can be allocated|
-|sharding.mongos.resources.requests.mem|The initial memory the containers can be allocated, include units|
-|sharding.mongos.extAccess.enabled|Boolean determining of MongoDB Split Horizon is enabled|
+|sharding.extAccess.enabled|Boolean determining of MongoDB Split Horizon is enabled|
 
 #### shardSrv.shards
 
@@ -929,16 +917,6 @@ The persistent storage that is assigned to each pod for log storage. The units s
 
 The name of the storage class that is used to create the persistentVolumeClaim.
 
-### sharding.shardSrv.extAccess.enabled
-
-A boolean to determine if external access, and therefore Split Horizon, is required/enabled.
-
-### sharding.shardSrv.extAccess.exposeMethod
-
-The service that will be used to provide access to the MognoDB replica set from external to Kubernetes. Choices are `NodePort` or `LoadBalancer`.
-
-Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) should be consulted on the best method for the environment.
-
 #### sharding.configSrv.replicas
 
 The number of members in the config server replica set. Must be an integer.
@@ -1020,16 +998,6 @@ The persistent storage that is assigned to each pod for log storage. The units s
 
 The name of the storage class that is used to create the persistentVolumeClaim.
 
-### sharding.configSrv.extAccess.enabled
-
-A boolean to determine if external access, and therefore Split Horizon, is required/enabled.
-
-### sharding.configSrv.extAccess.exposeMethod
-
-The service that will be used to provide access to the MognoDB replica set from external to Kubernetes. Choices are `NodePort` or `LoadBalancer`.
-
-Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) should be consulted on the best method for the environment.
-
 #### sharding.mongos.count
 
 The number of mongos instances to deploy.
@@ -1050,11 +1018,11 @@ The initial number of CPUs that is assigned to each pod specified as either an i
 
 The initial memory that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### sharding.mongos.extAccess.enabled
+### sharding.extAccess.enabled
 
-A boolean to determine if external access, and therefore Split Horizon, is required/enabled.
+A boolean to determine if external access is required/enabled. This will create services for to allow access from external to Kubernetes.
 
-### sharding.mongos.extAccess.exposeMethod
+### sharding.extAccess.exposeMethod
 
 The service that will be used to provide access to the MognoDB replica set from external to Kubernetes. Choices are `NodePort` or `LoadBalancer`.
 
