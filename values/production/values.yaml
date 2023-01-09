@@ -19,7 +19,7 @@ sharding:
         mem: 2Gi
     storage:
       nfs: false
-      persistenceType: multi
+      persistenceType: single
       single:
         size: 2Gi
         storageClass: data
@@ -117,7 +117,7 @@ agent:
   logLevel: DEBUG
   startupOptions: ~
 
-logLevel: DEBUG
+logLevel: INFO
 
 auth:
   scram:
@@ -138,7 +138,7 @@ opsManager:
   baseUrl: https://mongod0.mongodb.local:8443
   orgId: 5e439737e976cc5e50a7b13d
   projectName: K8S-CLOWNCLUSTER
-  omSecret: organization-secret
+  omSecret: organisation-secret
   caConfigmap: om-ca-cert
 
 tls:

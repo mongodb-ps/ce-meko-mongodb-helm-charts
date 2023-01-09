@@ -47,6 +47,7 @@
     - [Replica Set External Access, Services and Horizons](#replica-set-external-access-services-and-horizons)
     - [Encryption At Rest - this is currently non-fucntional due to changes](#encryption-at-rest---this-is-currently-non-fucntional-due-to-changes)
     - [Options](#options-1)
+      - [replicaSet.replicas](#replicasetreplicas)
       - [replicaSet.resources.limits.cpu](#replicasetresourceslimitscpu)
       - [replicaSet.resources.limits.mem](#replicasetresourceslimitsmem)
       - [replicaSet.resources.requests.cpu](#replicasetresourcesrequestscpu)
@@ -76,6 +77,51 @@
       - [Shard Members](#shard-members)
       - [Config Server Replica Set](#config-server-replica-set)
       - [Mongos](#mongos)
+    - [Options](#options-2)
+      - [shardSrv.shards](#shardsrvshards)
+      - [shardSrv.memberPerShard](#shardsrvmemberpershard)
+      - [sharding.shardSrv.resources.limits.cpu](#shardingshardsrvresourceslimitscpu)
+      - [sharding.shardSrv.resources.limits.mem](#shardingshardsrvresourceslimitsmem)
+      - [sharding.shardSrv.resources.requests.cpu](#shardingshardsrvresourcesrequestscpu)
+      - [sharding.shardSrv.resources.requests.mem](#shardingshardsrvresourcesrequestsmem)
+      - [sharding.shardSrv.storage.persistenceType](#shardingshardsrvstoragepersistencetype)
+      - [sharding.shardSrv.storage.nfs](#shardingshardsrvstoragenfs)
+      - [sharding.shardSrv.storage.nfsInitImage](#shardingshardsrvstoragenfsinitimage)
+      - [sharding.shardSrv.storage.single.size](#shardingshardsrvstoragesinglesize)
+      - [sharding.shardSrv.storage.single.storageClass](#shardingshardsrvstoragesinglestorageclass)
+      - [sharding.shardSrv.storage.multi.data.size](#shardingshardsrvstoragemultidatasize)
+      - [sharding.shardSrv.storage.multi.data.storageClass](#shardingshardsrvstoragemultidatastorageclass)
+    - [sharding.shardSrv.storage.multi.journal.size](#shardingshardsrvstoragemultijournalsize)
+    - [sharding.shardSrv.storage.multi.journal.storageClass](#shardingshardsrvstoragemultijournalstorageclass)
+    - [sharding.shardSrv.storage.multi.logs.size](#shardingshardsrvstoragemultilogssize)
+    - [sharding.shardSrv.storage.multi.logs.storageClass](#shardingshardsrvstoragemultilogsstorageclass)
+    - [sharding.shardSrv.extAccess.enabled](#shardingshardsrvextaccessenabled)
+    - [sharding.shardSrv.extAccess.exposeMethod](#shardingshardsrvextaccessexposemethod)
+      - [sharding.configSrv.replicas](#shardingconfigsrvreplicas)
+      - [sharding.configSrv.resources.limits.cpu](#shardingconfigsrvresourceslimitscpu)
+      - [sharding.configSrv.resources.limits.mem](#shardingconfigsrvresourceslimitsmem)
+      - [sharding.configSrv.resources.requests.cpu](#shardingconfigsrvresourcesrequestscpu)
+      - [sharding.configSrv.resources.requests.mem](#shardingconfigsrvresourcesrequestsmem)
+      - [sharding.configSrv.storage.persistenceType](#shardingconfigsrvstoragepersistencetype)
+      - [sharding.configSrv.storage.nfs](#shardingconfigsrvstoragenfs)
+      - [sharding.configSrv.storage.nfsInitImage](#shardingconfigsrvstoragenfsinitimage)
+      - [sharding.configSrv.storage.single.size](#shardingconfigsrvstoragesinglesize)
+      - [sharding.configSrv.storage.single.storageClass](#shardingconfigsrvstoragesinglestorageclass)
+      - [sharding.configSrv.storage.multi.data.size](#shardingconfigsrvstoragemultidatasize)
+      - [sharding.configSrv.storage.multi.data.storageClass](#shardingconfigsrvstoragemultidatastorageclass)
+    - [sharding.configSrv.storage.multi.journal.size](#shardingconfigsrvstoragemultijournalsize)
+    - [sharding.configSrv.storage.multi.journal.storageClass](#shardingconfigsrvstoragemultijournalstorageclass)
+    - [sharding.configSrv.storage.multi.logs.size](#shardingconfigsrvstoragemultilogssize)
+    - [sharding.configSrv.storage.multi.logs.storageClass](#shardingconfigsrvstoragemultilogsstorageclass)
+    - [sharding.configSrv.extAccess.enabled](#shardingconfigsrvextaccessenabled)
+    - [sharding.configSrv.extAccess.exposeMethod](#shardingconfigsrvextaccessexposemethod)
+      - [sharding.mongos.count](#shardingmongoscount)
+      - [sharding.mongos.resources.limits.cpu](#shardingmongosresourceslimitscpu)
+      - [sharding.mongos.resources.limits.mem](#shardingmongosresourceslimitsmem)
+      - [sharding.mongos.resources.requests.cpu](#shardingmongosresourcesrequestscpu)
+      - [sharding.mongos.resources.requests.mem](#shardingmongosresourcesrequestsmem)
+    - [sharding.mongos.extAccess.enabled](#shardingmongosextaccessenabled)
+    - [sharding.mongos.extAccess.exposeMethod](#shardingmongosextaccessexposemethod)
   - [Predeployment Checklist](#predeployment-checklist)
   - [Run](#run)
 
@@ -511,6 +557,10 @@ The following table describes the values required in the relevant `values.yaml` 
 |replicaSet.extAccess.ports[n].port|The port of the MongoDB horizon. It is either the NodePort port or the LoadBalancer port|
 |replicaSet.extAccess.ports[n].clusterIP|The clusterIP of the NodePort. Not required if `LoadBalancer` is the selected method|
 
+#### replicaSet.replicas
+
+The number of members in the replica set. Must be an integer.
+
 #### replicaSet.resources.limits.cpu
 
 The maximum number of CPUs that can be assigned to each pod specified as either an integer, float, or with the `m` suffix (for milliCPUS).
@@ -552,7 +602,7 @@ Default is `false`
 
 #### replicaSet.storage.nfsInitImage
 
-The image to use for the inint container to perform the `chown` on the NFS mounts.
+The image to use for the init container to perform the `chown` on the NFS mounts.
 
 The default is `quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9"`
 
@@ -639,13 +689,14 @@ sharding:
 
 ### TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_
 
-This requires AT LEAST six secrets. For each eash shard, config server replica set, and all the mongos instance there is one certificate for the client communications and one for cluster communications.
+This requires AT LEAST six secrets. For each shard, the config server replica set (CSRS), and for all the mongos instance, there is one certificate for the client communications and one for cluster authentication.
 
-The secrets contain the X.509 key and certificate. One key/certificate pair is used for all members of the replica set/shard/mongos pool, therefore a Subject Alternate Name (SAN) entry must exist for each member of the replica set/shard/mongos. The SANs will be in the form of:
+The secrets contain the X.509 key and certificate. One key/certificate pair is used for all members of the replica set/shard/mongos pool, therefore a Subject Alternate Name (SAN) entry must exist for each member of the replica set/shard/mongos.
 
 #### Shard Members
 
-The SAN FQDN for each shard member is as follows:
+A SAN is required for each member of the shard, this is the FQDN for each shard member, and is as follows:
+
 **\<clusterName\>-\<X\>-<Y>.\<clusterName\>-svc.\<namespace\>.svc.cluster.local**
 
 Where `<clusterName>` is the `clusterName` in the `values.yaml` for your deployment and `<X>` is the 0-based number of the shard and `<Y>` is the 0-based number of the shard member.
@@ -676,7 +727,7 @@ kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<cluster
 
 #### Config Server Replica Set
 
-A single X509 key and certificate is required for the Config Server Replica Set. These will be used to create two secrets: one for client communications and one for intra-replica set authentication. The FQDN of each replica set member must be in the certificate as a Subject Alternate Name (SAN).
+A single X.509 key and certificate is required for the Config Server Replica Set. These will be used to create two secrets: one for client communications and one for intra-replica set authentication. The FQDN of each replica set member must be in the certificate as a Subject Alternate Name (SAN).
 
 The SAN FQDN for each shard member is as follows:
 
@@ -739,6 +790,275 @@ kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<cluster
 ```
 
 **REQUIRED** if `tls.enabled` is `true`.
+
+### Options
+
+The following table describes the values required in the relevant `values.yaml` specifically for replica sets:
+
+|Key|Purpose|
+|--------------------------|------------------------------------|
+|sharding.shardSrv.shards|Number of shards (integer)|
+|sharding.shardSrv.memberPerShard|Number of members per shard (integer)|
+|sharding.shardSrv.resources.limits.cpu|The max CPU the containers can be allocated|
+|sharding.shardSrv.resources.limits.mem|The max memory the containers can be allocated, include units|
+|sharding.shardSrv.resources.requests.cpu|The initial CPU the containers can be allocated|
+|sharding.shardSrv.resources.requests.mem|The initial memory the containers can be allocated, include units|
+|sharding.shardSrv.storage.persistenceType|This is either `single` for all data one one partition, or `multi` for separate partiions for `data`, `journal`, and `logs`|
+|sharding.shardSrv.storage.nfs|Boolean value to determine if NFS if used for persistence storage, which requires a further init container to fix permissions on NFS mount|
+|sharding.shardSrv.storage.nfsInitImage|Image name a tag for the init container to perform the NFS permissions modification. Defaults to the same init container image as the database|
+|sharding.shardSrv.storage.single.size|The size of the volume for all storage, include units|
+|sharding.shardSrv.storage.single.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for all the storage. Default is ""|
+|sharding.shardSrv.storage.multi.data.size|The size of the volume for database data storage, include units|
+|sharding.shardSrv.storage.multi.data.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database data storage. Default is ""|
+|sharding.shardSrv.storage.multi.journal.size|The size of the volume for database journal, include units|
+|sharding.shardSrv.storage.multi.journal.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database journal. Default is ""|
+|sharding.shardSrv.storage.multi.logs.size|The size of the volume for database logs, include units|
+|sharding.shardSrv.storage.multi.logs.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database logs. Default is ""|
+|sharding.shardSrv.extAccess.enabled|Boolean determining of MongoDB Split Horizon is enabled|
+|sharding.shardSrv.extAccess.exposeMethod|The method to expose access MongoDB to clients externally to Kubernetes. The options are `NodePort` or `LoadBalancer`|
+|sharding.shardSrv.extAccess.ports|Array of objects describing horizone names with associated port addresses, and clouterIP if required. One entry is required per replica set member|
+|sharding.shardSrv.extAccess.ports[n].horizonName|Name of the MongoDB Horizon for the member|
+|sharding.shardSrv.extAccess.ports[n].port|The port of the MongoDB horizon. It is either the NodePort port or the LoadBalancer port|
+|sharding.configSrv.extAccess.ports[n].clusterIP|The clusterIP of the NodePort. Not required if `LoadBalancer` is the selected method|
+|sharding.configSrv.replicas|Number of members for the config server replica set (integer)|
+|sharding.configSrv.resources.limits.cpu|The max CPU the containers can be allocated|
+|sharding.configSrv.resources.limits.mem|The max memory the containers can be allocated, include units|
+|sharding.configSrv.resources.requests.cpu|The initial CPU the containers can be allocated|
+|sharding.configSrv.resources.requests.mem|The initial memory the containers can be allocated, include units|
+|sharding.configSrv.storage.persistenceType|This is either `single` for all data one one partition, or `multi` for separate partiions for `data`, `journal`, and `logs`|
+|sharding.configSrv.storage.nfs|Boolean value to determine if NFS if used for persistence storage, which requires a further init container to fix permissions on NFS mount|
+|sharding.configSrv.storage.nfsInitImage|Image name a tag for the init container to perform the NFS permissions modification. Defaults to the same init container image as the database|
+|sharding.configSrv.storage.single.size|The size of the volume for all storage, include units|
+|sharding.configSrv.storage.single.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for all the storage. Default is ""|
+|sharding.configSrv.storage.multi.data.size|The size of the volume for database data storage, include units|
+|sharding.configSrv.storage.multi.data.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database data storage. Default is ""|
+|sharding.configSrv.storage.multi.journal.size|The size of the volume for database journal, include units|
+|sharding.configSrv.storage.multi.journal.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database journal. Default is ""|
+|sharding.configSrv.storage.multi.logs.size|The size of the volume for database logs, include units|
+|sharding.configSrv.storage.multi.logs.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for the database logs. Default is ""|
+|sharding.configSrv.extAccess.enabled|Boolean determining of MongoDB Split Horizon is enabled|
+|sharding.mongos.count|Number of mongos instances to deploy replica set (integer)|
+|sharding.mongos.resources.limits.cpu|The max CPU the containers can be allocated|
+|sharding.mongos.resources.limits.mem|The max memory the containers can be allocated, include units|
+|sharding.mongos.resources.requests.cpu|The initial CPU the containers can be allocated|
+|sharding.mongos.resources.requests.mem|The initial memory the containers can be allocated, include units|
+|sharding.mongos.extAccess.enabled|Boolean determining of MongoDB Split Horizon is enabled|
+
+#### shardSrv.shards
+
+The number of shards to create in the sharded cluster.
+
+#### shardSrv.memberPerShard
+
+The number of members per shard.
+
+#### sharding.shardSrv.resources.limits.cpu
+
+The maximum number of CPUs that can be assigned to each pod specified as either an integer, float, or with the `m` suffix (for milliCPUS).
+
+#### sharding.shardSrv.resources.limits.mem
+
+The maximum memory that can be assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+#### sharding.shardSrv.resources.requests.cpu
+
+The initial number of CPUs that is assigned to each pod specified as either an integer, float, or with the `m` suffix (for milliCPUS).
+
+#### sharding.shardSrv.resources.requests.mem
+
+The initial memory that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+#### sharding.shardSrv.storage.persistenceType
+
+The type of storage for the pod. Select `single` for data, journal, and logs to be on one partition. If this is select both `storage.single.size` and `storage.single.storageClass` must be provided.
+
+If separate partitions are required for data, journal, and logs then select `multi`, and then provide all the following:
+
+* `sharding.shardSrv.storage.multi.data.size`
+* `sharding.shardSrv.storage.multi.data.storageClass`
+* `sharding.shardSrv.storage.multi.journal.size`
+* `sharding.shardSrv.storage.multi.journal.storageClass`
+* `sharding.shardSrv.storage.multi.logs.size`
+* `sharding.shardSrv.storage.multi.logs.storageClass`
+
+#### sharding.shardSrv.storage.nfs
+
+A boolean to determine if NFS is used as the persistent storage. If this is `true` then an additional init container is prepended to the init container array in the statefulSet to that will `chown`` the permissions of the NFS mount to be that of the mongod user. The Kubernetes Operator uses 2000:2000 for the UID and GID of the mongod user.
+
+This init container will run as root so the permissions can be set. This is done via setting the `runAsUser` to `0` and the `runAsNonRoot` to `false`. Ensure you understand the implications of this.
+
+This will chown `/data`, `/journal` and `/var/log/mongodb-mms-automation` to 2000:2000
+
+Default is `false`
+
+#### sharding.shardSrv.storage.nfsInitImage
+
+The image to use for the init container to perform the `chown` on the NFS mounts.
+
+The default is `quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9"`
+
+#### sharding.shardSrv.storage.single.size
+
+The persistent storage that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+#### sharding.shardSrv.storage.single.storageClass
+
+The name of the storage class that is used to create the persistentVolumeClaim for the data partition.
+
+#### sharding.shardSrv.storage.multi.data.size
+
+The persistent storage that is assigned to each pod for data storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+#### sharding.shardSrv.storage.multi.data.storageClass
+
+The name of the storage class that is used to create the persistentVolumeClaim for the journal partition.
+
+### sharding.shardSrv.storage.multi.journal.size
+
+The persistent storage that is assigned to each pod for journal storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+### sharding.shardSrv.storage.multi.journal.storageClass
+
+The name of the storage class that is used to create the persistentVolumeClaim for the log partition.
+
+### sharding.shardSrv.storage.multi.logs.size
+
+The persistent storage that is assigned to each pod for log storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+### sharding.shardSrv.storage.multi.logs.storageClass
+
+The name of the storage class that is used to create the persistentVolumeClaim.
+
+### sharding.shardSrv.extAccess.enabled
+
+A boolean to determine if external access, and therefore Split Horizon, is required/enabled.
+
+### sharding.shardSrv.extAccess.exposeMethod
+
+The service that will be used to provide access to the MognoDB replica set from external to Kubernetes. Choices are `NodePort` or `LoadBalancer`.
+
+Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) should be consulted on the best method for the environment.
+
+#### sharding.configSrv.replicas
+
+The number of members in the config server replica set. Must be an integer.
+
+#### sharding.configSrv.resources.limits.cpu
+
+The maximum number of CPUs that can be assigned to each pod specified as either an integer, float, or with the `m` suffix (for milliCPUS).
+
+#### sharding.configSrv.resources.limits.mem
+
+The maximum memory that can be assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+#### sharding.configSrv.resources.requests.cpu
+
+The initial number of CPUs that is assigned to each pod specified as either an integer, float, or with the `m` suffix (for milliCPUS).
+
+#### sharding.configSrv.resources.requests.mem
+
+The initial memory that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+#### sharding.configSrv.storage.persistenceType
+
+The type of storage for the pod. Select `single` for data, journal, and logs to be on one partition. If this is select both `storage.single.size` and `storage.single.storageClass` must be provided.
+
+If separate partitions are required for data, journal, and logs then select `multi`, and then provide all the following:
+
+* `sharding.configSrv.storage.multi.data.size`
+* `sharding.configSrv.storage.multi.data.storageClass`
+* `sharding.configSrv.storage.multi.journal.size`
+* `sharding.configSrv.storage.multi.journal.storageClass`
+* `sharding.configSrv.storage.multi.logs.size`
+* `sharding.configSrv.storage.multi.logs.storageClass`
+
+#### sharding.configSrv.storage.nfs
+
+A boolean to determine if NFS is used as the persistent storage. If this is `true` then an additional init container is prepended to the init container array in the statefulSet to that will `chown`` the permissions of the NFS mount to be that of the mongod user. The Kubernetes Operator uses 2000:2000 for the UID and GID of the mongod user.
+
+This init container will run as root so the permissions can be set. This is done via setting the `runAsUser` to `0` and the `runAsNonRoot` to `false`. Ensure you understand the implications of this.
+
+This will chown `/data`, `/journal` and `/var/log/mongodb-mms-automation` to 2000:2000
+
+Default is `false`
+
+#### sharding.configSrv.storage.nfsInitImage
+
+The image to use for the init container to perform the `chown` on the NFS mounts.
+
+The default is `quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9"`
+
+#### sharding.configSrv.storage.single.size
+
+The persistent storage that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+#### sharding.configSrv.storage.single.storageClass
+
+The name of the storage class that is used to create the persistentVolumeClaim for the data partition.
+
+#### sharding.configSrv.storage.multi.data.size
+
+The persistent storage that is assigned to each pod for data storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+#### sharding.configSrv.storage.multi.data.storageClass
+
+The name of the storage class that is used to create the persistentVolumeClaim for the journal partition.
+
+### sharding.configSrv.storage.multi.journal.size
+
+The persistent storage that is assigned to each pod for journal storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+### sharding.configSrv.storage.multi.journal.storageClass
+
+The name of the storage class that is used to create the persistentVolumeClaim for the log partition.
+
+### sharding.configSrv.storage.multi.logs.size
+
+The persistent storage that is assigned to each pod for log storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+### sharding.configSrv.storage.multi.logs.storageClass
+
+The name of the storage class that is used to create the persistentVolumeClaim.
+
+### sharding.configSrv.extAccess.enabled
+
+A boolean to determine if external access, and therefore Split Horizon, is required/enabled.
+
+### sharding.configSrv.extAccess.exposeMethod
+
+The service that will be used to provide access to the MognoDB replica set from external to Kubernetes. Choices are `NodePort` or `LoadBalancer`.
+
+Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) should be consulted on the best method for the environment.
+
+#### sharding.mongos.count
+
+The number of mongos instances to deploy.
+
+#### sharding.mongos.resources.limits.cpu
+
+The maximum number of CPUs that can be assigned to each pod specified as either an integer, float, or with the `m` suffix (for milliCPUS).
+
+#### sharding.mongos.resources.limits.mem
+
+The maximum memory that can be assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+#### sharding.mongos.resources.requests.cpu
+
+The initial number of CPUs that is assigned to each pod specified as either an integer, float, or with the `m` suffix (for milliCPUS).
+
+#### sharding.mongos.resources.requests.mem
+
+The initial memory that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
+
+### sharding.mongos.extAccess.enabled
+
+A boolean to determine if external access, and therefore Split Horizon, is required/enabled.
+
+### sharding.mongos.extAccess.exposeMethod
+
+The service that will be used to provide access to the MognoDB replica set from external to Kubernetes. Choices are `NodePort` or `LoadBalancer`.
+
+Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) should be consulted on the best method for the environment.
 
 ## Predeployment Checklist
 
