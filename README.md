@@ -1064,7 +1064,7 @@ Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networki
 
 Ensure all the following as satisfied before attempoting to deploy:
 
-- [ ] Create a new directory under the `charts/values` directory for the environment
+- [ ] Create a new directory under the `values` directory for the environment
 - [ ] Copy the example `values.yaml` file from the `examples` directory to the new directory
 - [ ] Ops Manager API Access Token created including the CIDR range of the Kubernetes Operator for the API Access List
 - [ ] Ops Manager API Access Token secret created
