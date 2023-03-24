@@ -10,7 +10,7 @@ spec:
   username: "root" 
   db: "admin"
   mongodbResourceRef:
-    name: {{ .Values.replicaSetName | lower | quote }}
+    name: {{ .Values.clusterName | lower | quote }}
   roles:
     - db: "admin"
       name: "root"

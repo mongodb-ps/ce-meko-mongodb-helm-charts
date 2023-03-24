@@ -1,0 +1,6 @@
+values/*/*.yaml
+values/dev/*
+values/production/*
+values/test/*
+data
+kubeconfig
