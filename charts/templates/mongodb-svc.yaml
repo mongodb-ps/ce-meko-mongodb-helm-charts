@@ -1,38 +1,36 @@
 
 {{ if or (and (hasKey .Values.replicaSet "extAccess") (hasKey .Values.replicaSet.extAccess "enabled") (eq .Values.replicaSet.extAccess.enabled true) (eq .Values.tls.enabled true)) (and (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true)) -}}
 {{- $app := (.Values.clusterName | lower) -}}
-{{- $exposeMethod := .Values.replicaSet.extAccess.exposeMethod }}
 {{- $namespace := .Release.Namespace -}}
 {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true) (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true)}}
 
-{{- range $index, $value := .Values.sharding.extAccess.ports -}}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $app }}-{{$index}}-svc
+  name: {{ $app }}-svc-external
   namespace: {{ $namespace }}
 spec:
-  {{- if eq ( $exposeMethod | lower) "nodeport" }}
-  clusterIP: {{ $value.clusterIP }}
-  {{- end }}
+  clusterIP: ""
   externalTrafficPolicy: Cluster
   ports:
   - port: 27017
     protocol: TCP
     targetPort: 27017
-    {{- if eq ( $exposeMethod | lower) "nodeport" }}
-    nodePort: {{ $value.port }}
+    {{- if (hasKey .Values.sharding.extAccess "port") }}
+    nodePort: {{ .Values.sharding.extAccess.port }}
     {{- end }}
   selector:
     app: {{ $app }}-svc
-    statefulset.kubernetes.io/pod-name: {{ $app }}-{{$index}}
+    controller: mongodb-enterprise-operator
   sessionAffinity: None
-  type: {{ $exposeMethod }}
+  type: NodePort
 
-{{- end }}
-{{- else }}
-{{- range $index, $value := .Values.replicaSet.extAccess.ports -}}
+{{- else if  and (hasKey .Values "replicaSet") (hasKey .Values.replicaSet "enabled") (eq .Values.replicaSet.enabled true) (hasKey .Values.replicaSet "extAccess") (hasKey .Values.replicaSet.extAccess "enabled") (eq .Values.replicaSet.extAccess.enabled true)}}
+
+{{- $exposeMethod := .Values.replicaSet.extAccess.exposeMethod }}
+{{- range $index, $value := .Values.replicaSet.extAccess.ports }}
+
 ---
 apiVersion: v1
 kind: Service
@@ -40,15 +38,17 @@ metadata:
   name: {{ $app }}-{{$index}}-svc
   namespace: {{ $namespace }}
 spec:
-  {{- if eq ( $exposeMethod | lower) "nodeport" }}
+  {{- if (hasKey $value "clusterIP") }}
   clusterIP: {{ $value.clusterIP }}
+  {{- else }}
+  clusterIP: ""
   {{- end }}
   externalTrafficPolicy: Cluster
   ports:
   - port: 27017
     protocol: TCP
     targetPort: 27017
-    {{- if eq ( $exposeMethod | lower) "nodeport" }}
+    {{- if eq ( .Values.replicaSet.extAccess.exposeMethod | lower) "nodeport" }}
     nodePort: {{ $value.port }}
     {{- end }}
   selector:

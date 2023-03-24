@@ -19,7 +19,7 @@
     - [tlsEnabled.caConfigMap](#tlsenabledcaconfigmap)
     - [MongoDB First User _REQUIRED_](#mongodb-first-user-required)
     - [LDAP Authentication and Authorisation](#ldap-authentication-and-authorisation)
-    - [Options](#options)
+    - [Configuration Items](#configuration-items)
       - [clusterName](#clustername)
       - [mongoDBVersion](#mongodbversion)
       - [mongoDBFCV](#mongodbfcv)
@@ -45,8 +45,7 @@
   - [Replica Set Specific Settings](#replica-set-specific-settings)
     - [TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_](#tls-x509-certificates-for-mongodb-deployments-highly-encouraged)
     - [Replica Set External Access, Services and Horizons](#replica-set-external-access-services-and-horizons)
-    - [Encryption At Rest - this is currently non-fucntional due to changes](#encryption-at-rest---this-is-currently-non-fucntional-due-to-changes)
-    - [Options](#options-1)
+    - [Configuration Items](#configuration-items-1)
       - [replicaSet.replicas](#replicasetreplicas)
       - [replicaSet.resources.limits.cpu](#replicasetresourceslimitscpu)
       - [replicaSet.resources.limits.mem](#replicasetresourceslimitsmem)
@@ -59,25 +58,23 @@
       - [replicaSet.storage.single.storageClass](#replicasetstoragesinglestorageclass)
       - [replicaSet.storage.multi.data.size](#replicasetstoragemultidatasize)
       - [replicaSet.storage.multi.data.storageClass](#replicasetstoragemultidatastorageclass)
-    - [replicaSet.storage.multi.journal.size](#replicasetstoragemultijournalsize)
-    - [replicaSet.storage.multi.journal.storageClass](#replicasetstoragemultijournalstorageclass)
-    - [replicaSet.storage.multi.logs.size](#replicasetstoragemultilogssize)
-    - [replicaSet.storage.multi.logs.storageClass](#replicasetstoragemultilogsstorageclass)
-    - [extAccess.enabled](#extaccessenabled)
-    - [extAccess.exposeMethod](#extaccessexposemethod)
-    - [extAccess.ports](#extaccessports)
-    - [extAccess.ports\[n\].horizonName](#extaccessportsnhorizonname)
-    - [extAccess.ports\[n\].port](#extaccessportsnport)
-    - [extAccess.ports\[n\].clusterIP](#extaccessportsnclusterip)
-    - [kmip.enabled](#kmipenabled)
-    - [kmip.host](#kmiphost)
-    - [kmip.port](#kmipport)
+      - [replicaSet.storage.multi.journal.size](#replicasetstoragemultijournalsize)
+      - [replicaSet.storage.multi.journal.storageClass](#replicasetstoragemultijournalstorageclass)
+      - [replicaSet.storage.multi.logs.size](#replicasetstoragemultilogssize)
+      - [replicaSet.storage.multi.logs.storageClass](#replicasetstoragemultilogsstorageclass)
+      - [extAccess.enabled](#extaccessenabled)
+      - [extAccess.exposeMethod](#extaccessexposemethod)
+      - [extAccess.ports](#extaccessports)
+      - [extAccess.ports\[n\].horizonName](#extaccessportsnhorizonname)
+      - [extAccess.ports\[n\].port](#extaccessportsnport)
+      - [extAccess.ports\[n\].clusterIP](#extaccessportsnclusterip)
   - [Sharded Cluster Specific Settings](#sharded-cluster-specific-settings)
     - [TLS X.509 Certificates for MongoDB Deployments _HIGHLY ENCOURAGED_](#tls-x509-certificates-for-mongodb-deployments-highly-encouraged-1)
       - [Shard Members](#shard-members)
       - [Config Server Replica Set](#config-server-replica-set)
       - [Mongos](#mongos)
-    - [Options](#options-2)
+    - [Mongos External Access and Services](#mongos-external-access-and-services)
+    - [Configuration Items](#configuration-items-2)
       - [shardSrv.shards](#shardsrvshards)
       - [shardSrv.memberPerShard](#shardsrvmemberpershard)
       - [sharding.shardSrv.resources.limits.cpu](#shardingshardsrvresourceslimitscpu)
@@ -91,10 +88,10 @@
       - [sharding.shardSrv.storage.single.storageClass](#shardingshardsrvstoragesinglestorageclass)
       - [sharding.shardSrv.storage.multi.data.size](#shardingshardsrvstoragemultidatasize)
       - [sharding.shardSrv.storage.multi.data.storageClass](#shardingshardsrvstoragemultidatastorageclass)
-    - [sharding.shardSrv.storage.multi.journal.size](#shardingshardsrvstoragemultijournalsize)
-    - [sharding.shardSrv.storage.multi.journal.storageClass](#shardingshardsrvstoragemultijournalstorageclass)
-    - [sharding.shardSrv.storage.multi.logs.size](#shardingshardsrvstoragemultilogssize)
-    - [sharding.shardSrv.storage.multi.logs.storageClass](#shardingshardsrvstoragemultilogsstorageclass)
+      - [sharding.shardSrv.storage.multi.journal.size](#shardingshardsrvstoragemultijournalsize)
+      - [sharding.shardSrv.storage.multi.journal.storageClass](#shardingshardsrvstoragemultijournalstorageclass)
+      - [sharding.shardSrv.storage.multi.logs.size](#shardingshardsrvstoragemultilogssize)
+      - [sharding.shardSrv.storage.multi.logs.storageClass](#shardingshardsrvstoragemultilogsstorageclass)
       - [sharding.configSrv.replicas](#shardingconfigsrvreplicas)
       - [sharding.configSrv.resources.limits.cpu](#shardingconfigsrvresourceslimitscpu)
       - [sharding.configSrv.resources.limits.mem](#shardingconfigsrvresourceslimitsmem)
@@ -107,17 +104,17 @@
       - [sharding.configSrv.storage.single.storageClass](#shardingconfigsrvstoragesinglestorageclass)
       - [sharding.configSrv.storage.multi.data.size](#shardingconfigsrvstoragemultidatasize)
       - [sharding.configSrv.storage.multi.data.storageClass](#shardingconfigsrvstoragemultidatastorageclass)
-    - [sharding.configSrv.storage.multi.journal.size](#shardingconfigsrvstoragemultijournalsize)
-    - [sharding.configSrv.storage.multi.journal.storageClass](#shardingconfigsrvstoragemultijournalstorageclass)
-    - [sharding.configSrv.storage.multi.logs.size](#shardingconfigsrvstoragemultilogssize)
-    - [sharding.configSrv.storage.multi.logs.storageClass](#shardingconfigsrvstoragemultilogsstorageclass)
+      - [sharding.configSrv.storage.multi.journal.size](#shardingconfigsrvstoragemultijournalsize)
+      - [sharding.configSrv.storage.multi.journal.storageClass](#shardingconfigsrvstoragemultijournalstorageclass)
+      - [sharding.configSrv.storage.multi.logs.size](#shardingconfigsrvstoragemultilogssize)
+      - [sharding.configSrv.storage.multi.logs.storageClass](#shardingconfigsrvstoragemultilogsstorageclass)
       - [sharding.mongos.count](#shardingmongoscount)
       - [sharding.mongos.resources.limits.cpu](#shardingmongosresourceslimitscpu)
       - [sharding.mongos.resources.limits.mem](#shardingmongosresourceslimitsmem)
       - [sharding.mongos.resources.requests.cpu](#shardingmongosresourcesrequestscpu)
       - [sharding.mongos.resources.requests.mem](#shardingmongosresourcesrequestsmem)
-    - [sharding.extAccess.enabled](#shardingextaccessenabled)
-    - [sharding.extAccess.exposeMethod](#shardingextaccessexposemethod)
+      - [sharding.extAccess.enabled](#shardingextaccessenabled)
+      - [sharding.extAccess.port](#shardingextaccessport)
   - [Predeployment Checklist](#predeployment-checklist)
   - [Run](#run)
 
@@ -143,7 +140,7 @@ The `/examples` directory has `values.yaml` examples for replica sets and sharde
 2. Create [Ops Manager Access Token](#ops-manager-api-access-token-required) (Progammatic Access)
 3. Create Kubernetes `configmap` for [Ops Manager X.509 Certificate Authority (CA) certificate chain](#ca-certificate-for-ops-manager-required)
 4. Create Kubernetes `configmap` for [MongoDB deployments CA certificate chain](#ca-certificate-for-mongodb-deployments-highly-encouraged) - if requires - and seriously, this should just be a normal thing
-5. Create Kubernets secrets for the [MonogDB instances TLS and cluster authentication](#tls-pem-files-for-mongodb-deployments-highly-encouraged) (for replica sets) or [MongoDB Sharded Clusters with TLS]() (for shardedc clusters)- once again this is "if requires", but should be just be a normal thing.....look at your life choices if you are not doing this!
+5. Create Kubernets secrets for the [MonogDB instances TLS and cluster authentication](#tls-pem-files-for-mongodb-deployments-highly-encouraged) (for replica sets) or [MongoDB Sharded Clusters with TLS](#tls-x509-certificates-for-mongodb-deployments-highly-encouraged-1) (for sharded  clusters)- once again this is "if requires", but should be just be a normal thing.....look at your life choices if you are not doing this!
 6. Create a Kubernetes secret for the [`root`](mongodb-first-user-required) user of the MongoDB deployment
 7. Create the `values.yaml` file for the deployment.
 
@@ -272,7 +269,7 @@ If LDAP authorisation is desired query must be provided to determine the groups 
 
 If LDAP authorisation is not required this setting can be skipped.
 
-### Options
+### Configuration Items
 
 The following table describes the common values required in the relevant `values.yaml` for both replica sets and sharded clusters:
 
@@ -305,9 +302,6 @@ The following table describes the common values required in the relevant `values
 |additionalUsers[n].username| Username of the database user to manage|
 |additionalUsers[n].passwdSecret|The secret name that contains the password for the user|
 |additionalUsers[n].roles[m]|Array of roles for the user, consisting of a `db` and the `role`|
-|kmip.enabled|Boolean determining if KMIP is enabled for the MongoDB deployment|
-|kmip.host|The host address of the KMIP device|
-|kmip.port|The port of the KMIP device|
 
 #### clusterName
 
@@ -516,15 +510,7 @@ e.g.
 mongodb://workernode5.mongodb.local:30000,workernode5.mongodb.local:30011,workernode5.mongodb.local:32002/?replicaSet=ap-mongodb-dev
 ```
 
-### Encryption At Rest - this is currently non-fucntional due to changes
-
-If encryption at rest is required the `kmp.enabled` value in the relevant `values.yaml` file must be set to `true`.
-
-Ensure to set the FQDN (`kmip.host`) and port (`kmip.port`) of the KMIP device/service.
-
-The pod's X.509 PEM file can CA certificate will be used for authentication to the KMIP device/service.
-
-### Options
+### Configuration Items
 
 The following table describes the values required in the relevant `values.yaml` specifically for replica sets:
 
@@ -618,59 +604,49 @@ The persistent storage that is assigned to each pod for data storage. The units 
 
 The name of the storage class that is used to create the persistentVolumeClaim for the journal partition.
 
-### replicaSet.storage.multi.journal.size
+#### replicaSet.storage.multi.journal.size
 
 The persistent storage that is assigned to each pod for journal storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### replicaSet.storage.multi.journal.storageClass
+#### replicaSet.storage.multi.journal.storageClass
 
 The name of the storage class that is used to create the persistentVolumeClaim for the log partition.
 
-### replicaSet.storage.multi.logs.size
+#### replicaSet.storage.multi.logs.size
 
 The persistent storage that is assigned to each pod for log storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### replicaSet.storage.multi.logs.storageClass
+#### replicaSet.storage.multi.logs.storageClass
 
 The name of the storage class that is used to create the persistentVolumeClaim.
 
-### extAccess.enabled
+#### extAccess.enabled
 
 A boolean to determine if external access, and therefore Split Horizon, is required/enabled.
 
-### extAccess.exposeMethod
+#### extAccess.exposeMethod
 
 The service that will be used to provide access to the MognoDB replica set from external to Kubernetes. Choices are `NodePort` or `LoadBalancer`.
 
 Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) should be consulted on the best method for the environment.
 
-### extAccess.ports
+For `NodePort` you can allocate the ClusterIP or have Kubernetes allocate one.
+
+#### extAccess.ports
 
 An array of object (see following attributes) that describe the Horizon name, port, and clusterIP for each member of the replica set. One object is required per member.
 
-### extAccess.ports[n].horizonName
+#### extAccess.ports[n].horizonName
 
 The MongoDB horizon name for the selected pod.
 
-### extAccess.ports[n].port
+#### extAccess.ports[n].port
 
 The port number for either the NodePort or the LoadBalancer for the selected pod.
 
-### extAccess.ports[n].clusterIP
+#### extAccess.ports[n].clusterIP
 
-The clusterIP for the selected pod. Only required when `NodePort` is selected as the service.
-
-### kmip.enabled
-
-A boolean value to determine if KMIP is used to perform encryption at rest within the MongoDB deployments.
-
-### kmip.host 
-
-The FQDN if the KMIP device/service.
-
-### kmip.port
-
-The port number of the KMIP device/service, normally 5696.
+The clusterIP for the selected pod. Only required when `NodePort` is selected as the service. If one is not provided, Kubernetes will automatically allocate one.
 
 ## Sharded Cluster Specific Settings
 
@@ -789,7 +765,28 @@ kubectl --kubeconfig=<CONFIG_FILE> -n <NAMESPACE> create secret tls mdb-<cluster
 
 **REQUIRED** if `tls.enabled` is `true`.
 
-### Options
+### Mongos External Access and Services
+
+If external access (e.g. access from external to Kubernetes) is required a NodePort service will be created for the mongos pool.
+
+To use a NodePort service, a Kubernetes worker node or an address that is resolved to a worker node, needs to be used by external clients to reach the mongos pool. The NodePort service will be allocated an IP address internal to Kubernetes.
+
+In most Kubernetes environments the NodePort port range is 30000 to 32767. The port numbers __CANNOT__ overlap with port numbers already in use in any deployment of any kind in the Kubernetes cluster.
+
+To allow external access set the `sharding.extAccess.enabled` setting to true. To set the port used externally, set the `sharding.extAccess.port` to a number value of the port, such as `31002`. If you do not set the port number you will need to use `kubectl` commands to find the port number of the service (named *****), or via your Kubernetes dashboard (if you have one).
+
+To access from external to Kubernetes the connection string would look similar to:
+
+```shell
+mongosh "mongodb://<WORKER_NODE_FQDN>:<PORT>" --tls --tlsCASFile <CA_FILE_ABSOLUTE_PATH> --username <USERNAME>
+```
+
+e.g.
+```shell
+mongosh "mongodb://workernode5.mongodb.local:30000" --tls --tlsCAFile /etc/pki/tls/certs/ca.pem --username user55
+```
+
+### Configuration Items
 
 The following table describes the values required in the relevant `values.yaml` specifically for replica sets:
 
@@ -801,9 +798,9 @@ The following table describes the values required in the relevant `values.yaml` 
 |sharding.shardSrv.resources.limits.mem|The max memory the containers can be allocated, include units|
 |sharding.shardSrv.resources.requests.cpu|The initial CPU the containers can be allocated|
 |sharding.shardSrv.resources.requests.mem|The initial memory the containers can be allocated, include units|
-|sharding.shardSrv.storage.persistenceType|This is either `single` for all data one one partition, or `multi` for separate partiions for `data`, `journal`, and `logs`|
+|sharding.shardSrv.storage.persistenceType|This is either `single` for all data one one partition, or `multi` for separate partions for `data`, `journal`, and `logs`|
 |sharding.shardSrv.storage.nfs|Boolean value to determine if NFS if used for persistence storage, which requires a further init container to fix permissions on NFS mount|
-|sharding.shardSrv.storage.nfsInitImage|Image name a tag for the init container to perform the NFS permissions modification. Defaults to the same init container image as the database|
+|sharding.shardSrv.storage.nfsInitImage|Image name and tag for the init container to perform the NFS permissions modification. Defaults to the same init container image as the database|
 |sharding.shardSrv.storage.single.size|The size of the volume for all storage, include units|
 |sharding.shardSrv.storage.single.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for all the storage. Default is ""|
 |sharding.shardSrv.storage.multi.data.size|The size of the volume for database data storage, include units|
@@ -832,7 +829,8 @@ The following table describes the values required in the relevant `values.yaml` 
 |sharding.mongos.resources.limits.cpu|The max CPU the containers can be allocated|
 |sharding.mongos.resources.limits.mem|The max memory the containers can be allocated, include units|
 |sharding.mongos.resources.requests.cpu|The initial CPU the containers can be allocated|
-|sharding.extAccess.enabled|Boolean determining of MongoDB Split Horizon is enabled|
+|sharding.extAccess.enabled|Boolean determining if a NodePort will be created for external access|
+|sharding.extAccess.port|Port number as an integer that will be used for the external access NodePort|
 
 #### shardSrv.shards
 
@@ -903,19 +901,19 @@ The persistent storage that is assigned to each pod for data storage. The units 
 
 The name of the storage class that is used to create the persistentVolumeClaim for the journal partition.
 
-### sharding.shardSrv.storage.multi.journal.size
+#### sharding.shardSrv.storage.multi.journal.size
 
 The persistent storage that is assigned to each pod for journal storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### sharding.shardSrv.storage.multi.journal.storageClass
+#### sharding.shardSrv.storage.multi.journal.storageClass
 
 The name of the storage class that is used to create the persistentVolumeClaim for the log partition.
 
-### sharding.shardSrv.storage.multi.logs.size
+#### sharding.shardSrv.storage.multi.logs.size
 
 The persistent storage that is assigned to each pod for log storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### sharding.shardSrv.storage.multi.logs.storageClass
+#### sharding.shardSrv.storage.multi.logs.storageClass
 
 The name of the storage class that is used to create the persistentVolumeClaim.
 
@@ -984,19 +982,19 @@ The persistent storage that is assigned to each pod for data storage. The units 
 
 The name of the storage class that is used to create the persistentVolumeClaim for the journal partition.
 
-### sharding.configSrv.storage.multi.journal.size
+#### sharding.configSrv.storage.multi.journal.size
 
 The persistent storage that is assigned to each pod for journal storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### sharding.configSrv.storage.multi.journal.storageClass
+#### sharding.configSrv.storage.multi.journal.storageClass
 
 The name of the storage class that is used to create the persistentVolumeClaim for the log partition.
 
-### sharding.configSrv.storage.multi.logs.size
+#### sharding.configSrv.storage.multi.logs.size
 
 The persistent storage that is assigned to each pod for log storage. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### sharding.configSrv.storage.multi.logs.storageClass
+#### sharding.configSrv.storage.multi.logs.storageClass
 
 The name of the storage class that is used to create the persistentVolumeClaim.
 
@@ -1020,15 +1018,15 @@ The initial number of CPUs that is assigned to each pod specified as either an i
 
 The initial memory that is assigned to each pod. The units suffix can be one of the following: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 
-### sharding.extAccess.enabled
+#### sharding.extAccess.enabled
 
 A boolean to determine if external access is required/enabled. This will create services for to allow access from external to Kubernetes.
 
-### sharding.extAccess.exposeMethod
+#### sharding.extAccess.port
 
-The service that will be used to provide access to the MognoDB replica set from external to Kubernetes. Choices are `NodePort` or `LoadBalancer`.
+The port number as an integer that will be used with the NodePort for external access. This is normally 30000 and above and must be unique throughout the whole Kubernetes cluster.
 
-Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) should be consulted on the best method for the environment.
+Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) should be consulted and an understanding of your Kubernetes environment to determine the best method for the environment.
 
 ## Predeployment Checklist
 
@@ -1042,6 +1040,7 @@ Ensure all the following as satisfied before attempoting to deploy:
 - [ ] MongoDB deployment CA certificate configmap created (recommended)
 - [ ] MongoDB deployment TLS certificate secret created (recommended)
 - [ ] Password secret for the first user created
+- [ ] Password secrets for other managed database users
 - [ ] Configure external access (horizons) if required
 - [ ] Configure LDAP access if required
 - [ ] Ensure all values in the relevant `values.yaml` file set

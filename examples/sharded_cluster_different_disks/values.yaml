@@ -1,6 +1,6 @@
 ---
 
-clusterName: clown-cluster
+clusterName: sc-0
 
 mongoDBVersion: 5.0.13-ent
 
@@ -19,10 +19,7 @@ sharding:
         mem: 2Gi
     storage:
       nfs: false
-      persistenceType: single
-      single:
-        size: 2Gi
-        storageClass: data
+      persistenceType: multi
       multi:
         data:
           size: 5Gi
@@ -47,17 +44,7 @@ sharding:
       persistenceType: single
       single:
         size: 1Gi
-        storageClass: data
-      multi:
-        data:
-          size: 5Gi
-          storageClass: dataClass
-        journal:
-          size: 5Gi
-          storageClass: journalClass
-        logs:
-          size: 5Gi
-          storageClass: logClass
+        storageClass: csrs
   mongos:
     count: 2
     resources:
@@ -71,58 +58,16 @@ sharding:
     enabled: true
     externalDomains:
     - "mongodb.local"
-    ports:
-      - horizonName: "clown-cluster.mongodb.local"
-        port: 31299
-        clusterIP: 10.43.125.29
 
 
 replicaSet:
-  enabled: true
-  replicas: 3
-  resources:
-    limits:
-      cpu: 2
-      mem: 4Gi
-    requests:
-      cpu: 1
-      mem: 4Gi
-  storage:
-    nfs: false
-    persistenceType: single
-    single:
-      size: 5Gi
-      storageClass: data
-    multi:
-      data:
-        size: 5Gi
-        storageClass: dataClass
-      journal:
-        size: 5Gi
-        storageClass: journalClass
-      logs:
-        size: 5Gi
-        storageClass: logClass
-  extAccess:
-    enabled: true
-    exposeMethod: NodePort
-    ports:
-      - horizonName: "rs-0-0.mongodb.local"
-        port: 31250
-        clusterIP: 10.43.125.20
-      - horizonName: "rs-0-1.mongodb.local"
-        port: 31251
-        clusterIP: 10.43.125.21
-      - horizonName: "rs-0-2.mongodb.local"
-        port: 31252
-        clusterIP: 10.43.125.22
+  enabled: false
 
 agent:
   logLevel: DEBUG
-  startupOptions:
-    maxLogFiles: "30"
+  startupOptions: ~
 
-logLevel: DEBUG
+logLevel: INFO
 
 auth:
   scram:
@@ -140,10 +85,10 @@ auth:
 
 opsManager:
   tlsEnabled: true
-  baseUrl: https://mongod0.mongodb.local:8443
-  orgId: 5e439737e976cc5e50a7b13d
-  projectName: K8S-CLOWNCLUSTER
-  omSecret: organization-secret
+  baseUrl: https://ops-manager.mongodb.local:8443
+  orgId: 5e439737e976cc5e50a7b13e
+  projectName: K8S-PROD-4
+  omSecret: organisation-secret
   caConfigmap: om-ca-cert
 
 tls:
@@ -151,11 +96,6 @@ tls:
   caConfigMap: custom-ca
 
 mongoDBAdminPasswdSecret: dev-adm-passwd
-
-kmip:
-  enabled: false
-  host: kmip-svc.mongodb.svc.cluster.local
-  port: 5696
 
 additionalUsers:
   - username: om-user

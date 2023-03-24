@@ -43,15 +43,6 @@ spec:
         verbosity: 0
         {{- end }}
         timeStampFormat: iso8601-local
-      {{- if .Values.kmip.enabled }}
-      security:
-        enableEncryption: true
-        kmip:
-          serverName: {{ .Values.kmip.host }}
-          port: {{ .Values.kmip.port }}
-          clientCertificateFile: /mongodb-automation/server.pem
-          serverCAFile: /mongodb-automation/ca.pem
-      {{- end }}
   shardPodSpec:
     podTemplate:
       spec:
@@ -131,15 +122,6 @@ spec:
         verbosity: 0
         {{- end }}
         timeStampFormat: iso8601-local
-      {{- if .Values.kmip.enabled }}
-      security:
-        enableEncryption: true
-        kmip:
-          serverName: {{ .Values.kmip.host }}
-          port: {{ .Values.kmip.port }}
-          clientCertificateFile: /mongodb-automation/server.pem
-          serverCAFile: /mongodb-automation/ca.pem
-      {{- end }}
   mongosPodSpec:
     podTemplate:
       spec:
@@ -182,15 +164,6 @@ spec:
         verbosity: 0
         {{- end }}
         timeStampFormat: iso8601-local
-      {{- if .Values.kmip.enabled }}
-      security:
-        enableEncryption: true
-        kmip:
-          serverName: {{ .Values.kmip.host }}
-          port: {{ .Values.kmip.port }}
-          clientCertificateFile: /mongodb-automation/server.pem
-          serverCAFile: /mongodb-automation/ca.pem
-      {{- end }}
   configSrvPodSpec:
     podTemplate:
       spec:
@@ -319,15 +292,6 @@ spec:
         verbosity: 2
         {{- end }}
         timeStampFormat: iso8601-local
-      {{- if .Values.kmip.enabled }}
-      security:
-        enableEncryption: true
-        kmip:
-          serverName: {{ .Values.kmip.host }}
-          port: {{ .Values.kmip.port }}
-          clientCertificateFile: /mongodb-automation/server.pem
-          serverCAFile: /mongodb-automation/ca.pem
-      {{- end }}
   {{ if and (hasKey .Values.replicaSet "extAccess") (hasKey .Values.replicaSet.extAccess "enabled") (eq .Values.replicaSet.extAccess.enabled true) (eq .Values.tls.enabled true) -}}
   exposedExternally: true
   connectivity:

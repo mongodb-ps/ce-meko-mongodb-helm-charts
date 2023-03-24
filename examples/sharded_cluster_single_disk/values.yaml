@@ -1,0 +1,112 @@
+---
+
+clusterName: sc-0
+
+mongoDBVersion: 5.0.13-ent
+
+
+sharding:
+  enabled: true
+  shardSrv:
+    shards: 2
+    memberPerShard: 3
+    resources:
+      limits:
+        cpu: 2
+        mem: 2Gi
+      requests:
+        cpu: 1
+        mem: 2Gi
+    storage:
+      nfs: false
+      persistenceType: single
+      single:
+        size: 2Gi
+        storageClass: data
+  configSrv:
+    replicas: 3
+    resources:
+      limits:
+        cpu: 2
+        mem: 2Gi
+      requests:
+        cpu: 1
+        mem: 2Gi
+    storage:
+      nfs: false
+      persistenceType: single
+      single:
+        size: 1Gi
+        storageClass: csrs
+      multi:
+        data:
+          size: 5Gi
+          storageClass: dataClass
+        journal:
+          size: 5Gi
+          storageClass: journalClass
+        logs:
+          size: 5Gi
+          storageClass: logClass
+  mongos:
+    count: 2
+    resources:
+      limits:
+        cpu: 2
+        mem: 2Gi
+      requests:
+        cpu: 1
+        mem: 2Gi
+  extAccess:
+    enabled: true
+    externalDomains:
+    - "mongodb.local"
+
+
+replicaSet:
+  enabled: false
+
+agent:
+  logLevel: DEBUG
+  startupOptions: ~
+
+logLevel: INFO
+
+auth:
+  scram:
+    enabled: true
+  ldap:
+    enabled: true
+    servers:
+      - ad0.mongodb.local
+    ldaps: true
+    caConfigMap: custom-ca
+    bindUserDN: 'CN=ldap-bind-user,CN=Users,DC=mongodb,DC=local'
+    bindUserSecret: binduserpasswd
+    userToDNMapping: '[{ match: "(.+)@MONGODB.LOCAL", substitution: "cn={0},cn=Users,dc=mongodb,dc=local"}]'
+    authzQueryTemplate: '{USER}?memberOf?base'
+
+opsManager:
+  tlsEnabled: true
+  baseUrl: https://ops-manager.mongodb.local:8443
+  orgId: 5e439737e976cc5e50a7b13e
+  projectName: K8S-PROD-2
+  omSecret: organisation-secret
+  caConfigmap: om-ca-cert
+
+tls:
+  enabled: true
+  caConfigMap: custom-ca
+
+mongoDBAdminPasswdSecret: dev-adm-passwd
+
+additionalUsers:
+  - username: om-user
+    passwdSecret: om-user
+    roles:
+      - db: admin
+        role: "clusterMonitor"
+      - db: admin
+        role: "readWriteAnyDatabase"
+      - db: admin
+        role: "userAdminAnyDatabase"

@@ -1,6 +1,5 @@
 ---
 helmDefaults:
-  tillerless: true
   wait: false
 releases:
   - name: {{ requiredEnv "ENV" }}-mongodb
