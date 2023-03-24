@@ -48,7 +48,7 @@ spec:
   - port: 27017
     protocol: TCP
     targetPort: 27017
-    {{- if eq ( .Values.replicaSet.extAccess.exposeMethod | lower) "nodeport" }}
+    {{- if eq ( $exposeMethod | lower) "nodeport" }}
     nodePort: {{ $value.port }}
     {{- end }}
   selector:
