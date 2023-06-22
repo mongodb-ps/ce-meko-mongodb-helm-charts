@@ -318,7 +318,7 @@ As of MongoDB 5.0 the versioning has changed to **\<major\>.\<rapid\>.\<patch\>-
 
 The Feature Compatibility Version of the deployment. Can only ever at or one major version below the currently installed MongoDB version.
 
-Is a string value.
+Is a string value. If you do not set this as a string, any trailing `0` will be removed by the YAML parser and Ops Manager will return a 500 error, which will take you hours to figure out!
 
 Default is "5.0"
 
