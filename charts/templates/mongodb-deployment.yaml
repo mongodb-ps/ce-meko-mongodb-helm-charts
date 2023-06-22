@@ -5,7 +5,16 @@ metadata:
   name: {{ .Values.clusterName | lower }}
 spec:
   version: {{ .Values.mongoDBVersion | quote }}
-  featureCompatibilityVersion: {{ .Values.mongoDBFCV | default "5.0" | quote }}
+  {{- if .Values.mongoDBFCV }}
+  {{- if and (kindIs "string" .Values.mongoDBFCV) (regexMatch "^\\d.\\d$" .Values.mongoDBFCV) }}
+  featureCompatibilityVersion: {{ .Values.mongoDBFCV | quote }}
+  {{- else }}
+  {{- fail "mongoDBFCV must be a string in the format of \"x.x\", such as \"6.0\"" }}
+  {{- end }}
+  {{- else }}
+  featureCompatibilityVersion: {{ regexFind "\\d\\.\\d" .Values.mongoDBVersion | quote }}
+  {{- end }}
+
   opsManager:
     configMapRef:
       name: project-{{ .Values.opsManager.projectName | lower }}
