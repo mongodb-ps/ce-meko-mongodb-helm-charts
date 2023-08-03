@@ -357,3 +357,27 @@ spec:
       additionalCertificateDomains: {{ .Values.sharding.extAccess.externalDomains }}
       {{- end }}
     {{- end }}
+  backup:
+    mode: {{ .Values.backup.mode }}
+    assignmentLabels: ""
+    {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled false) }}
+    autoTerminateOnDeletion: {{ .Values.backup.autoTerminateOnDeletion }}
+    {{- end }}
+    encryption:
+      kmip:
+        client:
+          clientCertificatePrefix: {{ .Values.backup.encryption.kmip.client.clientCertificatePrefix }}
+    snapshotSchedule:
+      snapshotIntervalHours: {{ .Values.backup.snapshotSchedule.snapshotIntervalHours }}
+      snapshotRetentionDays: {{ .Values.backup.snapshotSchedule.snapshotRetentionDays }}
+      dailySnapshotRetentionDays: {{ .Values.backup.snapshotSchedule.dailySnapshotRetentionDays }}
+      weeklySnapshotRetentionWeeks: {{ .Values.backup.snapshotSchedule.weeklySnapshotRetentionWeeks }}
+      monthlySnapshotRetentionMonths: {{ .Values.backup.snapshotSchedule.monthlySnapshotRetentionMonths }}
+      pointInTimeWindowHours: {{ .Values.backup.snapshotSchedule.pointInTimeWindowHours }}
+      referenceHourOfDay: {{ .Values.backup.snapshotSchedule.referenceHourOfDay }}
+      referenceMinuteOfHour: {{ .Values.backup.snapshotSchedule.referenceMinuteOfHour }}
+      fullIncrementalDayOfWeek: {{ .Values.backup.snapshotSchedule.fullIncrementalDayOfWeek }}
+      {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true) (and (lt .FeatureCompatibilityVersion "4.1")) }}
+      clusterCheckpointIntervalMin: {{ .Values.backup.snapshotSchedule.clusterCheckpointIntervalMin }}
+      {{- end }}
+  {{- end }}
