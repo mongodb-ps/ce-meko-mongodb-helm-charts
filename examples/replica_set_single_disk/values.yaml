@@ -87,10 +87,11 @@ additionalUsers:
 backup:
   mode: enabled
   autoTerminateOnDeletion: false
-  encryption:
+  encryption: 
+    enabled: true
     kmip:
       client:
-        clientCertificatePrefix: ""
+        clientCertificatePrefix: "mongodb-kmip-client-pem"
   snapshotSchedule:
     snapshotIntervalHours: 6
     snapshotRetentionDays: 3

@@ -363,10 +363,12 @@ spec:
     {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled false) }}
     autoTerminateOnDeletion: {{ .Values.backup.autoTerminateOnDeletion }}
     {{- end }}
+        {{- if and (hasKey .Values "backup") (hasKey .Values.backup "encryption") (hasKey .Values.backup.encryption "enabled") .Values.backup.encryption.enabled (ne .Values.backup.encryption.kmip.client.clientCertificatePrefix "") }}
     encryption:
       kmip:
         client:
           clientCertificatePrefix: {{ .Values.backup.encryption.kmip.client.clientCertificatePrefix }}
+    {{- end }}
     snapshotSchedule:
       snapshotIntervalHours: {{ .Values.backup.snapshotSchedule.snapshotIntervalHours }}
       snapshotRetentionDays: {{ .Values.backup.snapshotSchedule.snapshotRetentionDays }}
