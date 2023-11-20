@@ -83,3 +83,23 @@ additionalUsers:
         role: "readWriteAnyDatabase"
       - db: admin
         role: "userAdminAnyDatabase"
+        
+backup:
+  mode: enabled
+  autoTerminateOnDeletion: false
+  encryption: 
+    enabled: true
+    kmip:
+      client:
+        clientCertificatePrefix: "mongodb-kmip-client-pem"
+  snapshotSchedule:
+    snapshotIntervalHours: 6
+    snapshotRetentionDays: 3
+    dailySnapshotRetentionDays: 7
+    weeklySnapshotRetentionWeeks: 4
+    monthlySnapshotRetentionMonths: 0
+    pointInTimeWindowHours: 24
+    referenceHourOfDay: 0
+    referenceMinuteOfHour: 0
+    fullIncrementalDayOfWeek: "SUNDAY"
+    clusterCheckpointIntervalMin: 15
