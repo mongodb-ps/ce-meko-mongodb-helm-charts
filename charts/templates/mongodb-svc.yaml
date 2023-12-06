@@ -2,13 +2,15 @@
 {{ if or (and (hasKey .Values.replicaSet "extAccess") (hasKey .Values.replicaSet.extAccess "enabled") (eq .Values.replicaSet.extAccess.enabled true) (eq .Values.tls.enabled true)) (and (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true)) -}}
 {{- $app := (.Values.clusterName | lower) -}}
 {{- $namespace := .Release.Namespace -}}
-{{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true) (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true)}}
+{{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true) (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true) (hasKey .Values.sharding.extAccess "ports")}}
 
+{{- $exposeMethod := ternary "NodePort" "LoadBalancer" (eq (.Values.replicaSet.extAccess.exposeMethod | lower) "nodeport")}}
+{{- range $index, $value := .Values.sharding.extAccess.ports }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $app }}-svc-external
+  name: {{ $app }}-mongos-{{ $index }}-svc-external
   namespace: {{ $namespace }}
 spec:
   clusterIP: ""
@@ -17,18 +19,18 @@ spec:
   - port: 27017
     protocol: TCP
     targetPort: 27017
-    {{- if (hasKey .Values.sharding.extAccess "port") }}
-    nodePort: {{ .Values.sharding.extAccess.port }}
+    {{- if eq ( $exposeMethod | lower) "nodeport" }}
+    nodePort: {{ $value }}
     {{- end }}
   selector:
-    app: {{ $app }}-svc
+    statefulset.kubernetes.io/pod-name: {{ $app }}-mongos-{{$index}}
     controller: mongodb-enterprise-operator
   sessionAffinity: None
   type: NodePort
+{{- end }}
 
 {{- else if  and (hasKey .Values "replicaSet") (hasKey .Values.replicaSet "enabled") (eq .Values.replicaSet.enabled true) (hasKey .Values.replicaSet "extAccess") (hasKey .Values.replicaSet.extAccess "enabled") (eq .Values.replicaSet.extAccess.enabled true)}}
-
-{{- $exposeMethod := .Values.replicaSet.extAccess.exposeMethod }}
+{{- $exposeMethod := ternary "NodePort" "LoadBalancer" (eq (.Values.replicaSet.extAccess.exposeMethod | lower) "nodeport")}}
 {{- range $index, $value := .Values.replicaSet.extAccess.ports }}
 
 ---
