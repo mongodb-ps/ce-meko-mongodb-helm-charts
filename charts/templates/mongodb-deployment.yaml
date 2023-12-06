@@ -4,9 +4,11 @@ kind: MongoDB
 metadata:
   name: {{ .Values.clusterName | lower }}
 spec:
+{{- if (hasKey .Values "backup") }}
+{{- end }}
   version: {{ .Values.mongoDBVersion | quote }}
-  {{- if .Values.mongoDBFCV }}
-  {{- if and (kindIs "string" .Values.mongoDBFCV) (regexMatch "^\\d.\\d$" .Values.mongoDBFCV) }}
+  {{- if (hasKey .Values "mongoDBFCV") }}
+  {{- if and (kindIs "string" .Values.mongoDBFCV) (regexMatch "^\\d\\.\\d$" .Values.mongoDBFCV) }}
   featureCompatibilityVersion: {{ .Values.mongoDBFCV | quote }}
   {{- else }}
   {{- fail "mongoDBFCV must be a string in the format of \"x.x\", such as \"6.0\"" }}
