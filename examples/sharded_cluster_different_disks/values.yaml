@@ -2,7 +2,7 @@
 
 clusterName: sc-0
 
-mongoDBVersion: 5.0.13-ent
+mongoDBVersion: 8.0.20-ent
 
 
 sharding:

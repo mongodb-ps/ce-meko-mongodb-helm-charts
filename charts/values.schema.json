@@ -12,7 +12,7 @@
     "operator": {
       "type": "string",
       "pattern": "^([Mm][Ee][Kk][Oo]|[Mm][Cc][Kk])$"
-    }
+    },
     "clusterName": {
       "type": "string"
     },
