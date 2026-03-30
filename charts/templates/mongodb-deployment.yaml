@@ -61,8 +61,10 @@ spec:
   shardPodSpec:
     podTemplate:
       spec:
+        {{- if (hasKey .Values "imagePullSecrets") }}
         imagePullSecrets:
-          - name: regcred
+          - name: {{ .Values.imagePullSecrets }}
+        {{- end }}
         initContainers:
         {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
           - name: mongodb-kubernetes-init-database
@@ -124,8 +126,10 @@ spec:
   mongosPodSpec:
     podTemplate:
       spec:
+        {{- if (hasKey .Values "imagePullSecrets") }}
         imagePullSecrets:
-          - name: regcred
+          - name: {{ .Values.imagePullSecrets }}
+        {{- end }}
         initContainers:
         {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
           - name: mongodb-kubernetes-init-database
@@ -170,8 +174,10 @@ spec:
   configSrvPodSpec:
     podTemplate:
       spec:
+        {{- if (hasKey .Values "imagePullSecrets") }}
         imagePullSecrets:
-          - name: regcred
+          - name: {{ .Values.imagePullSecrets }}
+        {{- end }}
         initContainers:
         {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
           - name: mongodb-kubernetes-init-database
