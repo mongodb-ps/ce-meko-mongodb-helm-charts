@@ -9,6 +9,10 @@
     "mongoDBAdminPasswdSecret"
   ],
   "properties": {
+    "operator": {
+      "type": "string",
+      "pattern": "^([Mm][Ee][Kk][Oo]|[Mm][Cc][Kk])$"
+    }
     "clusterName": {
       "type": "string"
     },
@@ -18,7 +22,7 @@
     },
     "logLevel": {
       "type": "string",
-      "pattern": "(^INFO|DEBUG$)"
+      "pattern": "^(INFO|DEBUG)$"
     },
     "opsManager": {
       "type": "object",

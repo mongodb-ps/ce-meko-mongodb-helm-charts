@@ -473,9 +473,9 @@ The certificates must include the name of FQDN external to Kubernetes as a Subje
 
 The secrets must be named as follows:
 
-**mdb-<clusterName\>-\<cert\>**
+**mdb-<clusterName\>-cert**
 
-**mdb-<clusterName\>-\<clusterfile\>**
+**mdb-<clusterName\>-clusterfile**
 
 The two secrets can be created as follows:
 

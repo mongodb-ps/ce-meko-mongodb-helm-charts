@@ -34,8 +34,8 @@ spec:
       startupOptions:
         logLevel: {{ .Values.agent.logLevel }}
         {{- if (hasKey .Values.agent "startupOptions")}}
-        {{- range .Values.agent.startupOptions }}
-        {{ . }}
+        {{- range $key, $value := .Values.agent.startupOptions }}
+        {{ $key }}: {{ $value }}
         {{- end }}
         {{- end }}
     additionalMongodConfig:
@@ -113,8 +113,8 @@ spec:
       startupOptions:
         logLevel: {{ .Values.agent.logLevel }}
         {{- if (hasKey .Values.agent "startupOptions")}}
-        {{- range .Values.agent.startupOptions }}
-        {{ . }}
+        {{- range $key, $value := .Values.agent.startupOptions }}
+        {{ $key }}: {{ $value }}
         {{- end }}
         {{- end }}
     additionalMongodConfig:
@@ -155,8 +155,8 @@ spec:
       startupOptions:
         logLevel: {{ .Values.agent.logLevel }}
         {{- if (hasKey .Values.agent "startupOptions")}}
-        {{- range .Values.agent.startupOptions }}
-        {{ . }}
+        {{- range $key, $value := .Values.agent.startupOptions }}
+        {{ $key }}: {{ $value }}
         {{- end }}
         {{- end }}
     additionalMongodConfig: 
@@ -241,27 +241,11 @@ spec:
         imagePullSecrets:
           - name: regcred
         initContainers:
-        {{- if and (hasKey .Values.replicaSet.storage "nfs") (eq .Values.replicaSet.storage.nfs true) }}
-          - name: fix-nfs
-            securityContext:
-              runAsNonRoot: false
-              runAsUser: 0
-            image: {{ .Values.replicaSet.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.13" | quote }}
-            command: ["/bin/sh", "-c"]
-            args:
-            - chown 2000:2000 -R /data /journal /var/log/mongodb-mms-automation
-            volumeMounts:
-            - mountPath: /data
-              name: data
-              subPath: data
-            - mountPath: /journal
-              name: data
-              subPath: journal
-            - mountPath: /var/log/mongodb-mms-automation
-              name: data
-              subPath: logs
-        {{- end}}
+        {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
           - name: mongodb-enterprise-init-database
+        {{- else }}
+          - name: mongodb-kubernetes-init-database
+        {{- end }}
         containers:
           - name: mongodb-enterprise-database
             resources:
@@ -310,14 +294,13 @@ spec:
       {{- range .Values.replicaSet.extAccess.ports }}
       - "external": "{{ .horizonName }}:{{ .port }}"
       {{- end }}
-  {{ end -}}
   {{- end }}
   agent:
     startupOptions:
       logLevel: {{ .Values.agent.logLevel }}
       {{- if (hasKey .Values.agent "startupOptions")}}
-      {{- range .Values.agent.startupOptions }}
-      {{ . }}
+      {{- range $key, $value := .Values.agent.startupOptions }}
+      {{ $key }}: {{ ($value | toString) | quote }}
       {{- end }}
       {{- end }}
   security:
@@ -361,11 +344,12 @@ spec:
     {{- end }}
   backup:
     mode: {{ .Values.backup.mode }}
+    {{- if eq (.Values.backup.mode | lower) "enabled" }}
     assignmentLabels: ""
     {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled false) }}
     autoTerminateOnDeletion: {{ .Values.backup.autoTerminateOnDeletion }}
     {{- end }}
-        {{- if and (hasKey .Values "backup") (hasKey .Values.backup "encryption") (hasKey .Values.backup.encryption "enabled") .Values.backup.encryption.enabled (ne .Values.backup.encryption.kmip.client.clientCertificatePrefix "") }}
+    {{- if .Values.backup.encryption.kmip.enabled }}
     encryption:
       kmip:
         client:
@@ -383,5 +367,6 @@ spec:
       fullIncrementalDayOfWeek: {{ .Values.backup.snapshotSchedule.fullIncrementalDayOfWeek }}
       {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true) (and (lt .FeatureCompatibilityVersion "4.1")) }}
       clusterCheckpointIntervalMin: {{ .Values.backup.snapshotSchedule.clusterCheckpointIntervalMin }}
+      {{- end }}
       {{- end }}
   {{- end }}
