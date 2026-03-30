@@ -3,6 +3,10 @@ apiVersion: mongodb.com/v1
 kind: MongoDB
 metadata:
   name: {{ .Values.clusterName | lower }}
+  {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") (eq (.Values.staticPods | default true) true ) }}
+  annotations:
+    mongodb.com/v1.architecture: "static"
+  {{- end }}
 spec:
 {{- if (hasKey .Values "backup") }}
 {{- end }}
@@ -60,27 +64,11 @@ spec:
         imagePullSecrets:
           - name: regcred
         initContainers:
-        {{- if and (hasKey .Values.sharding.shardSrv.storage "nfs") (eq .Values.sharding.shardSrv.storage.nfs true) }}
-          - name: fix-nfs
-            securityContext:
-              runAsNonRoot: false
-              runAsUser: 0
-            image: {{ .Values.sharding.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.13" | quote }}
-            command: ["/bin/sh", "-c"]
-            args:
-            - chown 2000:2000 -R /data /journal /var/log/mongodb-mms-automation
-            volumeMounts:
-            - mountPath: /data
-              name: data
-              subPath: data
-            - mountPath: /journal
-              name: data
-              subPath: journal
-            - mountPath: /var/log/mongodb-mms-automation
-              name: data
-              subPath: logs
-        {{- end}}
+        {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
           - name: mongodb-enterprise-init-database
+        {{- else }}
+          - name: mongodb-kubernetes-init-database
+        {{- end }}
         containers:
           - name: mongodb-enterprise-database
             resources:
@@ -139,7 +127,11 @@ spec:
         imagePullSecrets:
           - name: regcred
         initContainers:
+        {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
           - name: mongodb-enterprise-init-database
+        {{- else }}
+          - name: mongodb-kubernetes-init-database
+        {{- end }}
         containers:
           - name: mongodb-enterprise-database
             resources:
@@ -181,27 +173,11 @@ spec:
         imagePullSecrets:
           - name: regcred
         initContainers:
-        {{- if and (hasKey .Values.sharding.configSrv.storage "nfs") (eq .Values.sharding.configSrv.storage.nfs true) }}
-          - name: fix-nfs
-            securityContext:
-              runAsNonRoot: false
-              runAsUser: 0
-            image: {{ .Values.storage.nfsInitImage | default "quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.13" | quote }}
-            command: ["/bin/sh", "-c"]
-            args:
-            - chown 2000:2000 -R /data /journal /var/log/mongodb-mms-automation
-            volumeMounts:
-            - mountPath: /data
-              name: data
-              subPath: data
-            - mountPath: /journal
-              name: data
-              subPath: journal
-            - mountPath: /var/log/mongodb-mms-automation
-              name: data
-              subPath: logs
-        {{- end}}
+        {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
           - name: mongodb-enterprise-init-database
+        {{- else }}
+          - name: mongodb-kubernetes-init-database
+        {{- end }}
         containers:
           - name: mongodb-enterprise-database
             resources:

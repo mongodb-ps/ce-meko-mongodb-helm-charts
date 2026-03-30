@@ -13,6 +13,9 @@
       "type": "string",
       "pattern": "^([Mm][Ee][Kk][Oo]|[Mm][Cc][Kk])$"
     },
+    "staticPods": {
+      "type": "boolean"
+    },
     "clusterName": {
       "type": "string"
     },
