@@ -224,9 +224,9 @@ spec:
           - name: regcred
         initContainers:
         {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
-          - name: mongodb-enterprise-init-database
-        {{- else }}
           - name: mongodb-kubernetes-init-database
+        {{- else }}
+          - name: mongodb-enterprise-init-database
         {{- end }}
         containers:
           - name: mongodb-enterprise-database
