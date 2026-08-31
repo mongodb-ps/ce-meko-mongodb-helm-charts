@@ -5,7 +5,7 @@ data:
   projectName: {{ .Values.opsManager.projectName }}
   {{- if .Values.opsManager.tlsEnabled }}
   sslMMSCAConfigMap: {{ .Values.opsManager.caConfigmap }}
-  sslRequireValidMMSServerCertificates: ‘true’
+  sslRequireValidMMSServerCertificates: "true"
   {{- end }}
 kind: ConfigMap
 metadata:

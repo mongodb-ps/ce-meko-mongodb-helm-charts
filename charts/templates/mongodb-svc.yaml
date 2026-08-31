@@ -1,10 +1,13 @@
 
-{{ if or (and (hasKey .Values.replicaSet "extAccess") (hasKey .Values.replicaSet.extAccess "enabled") (eq .Values.replicaSet.extAccess.enabled true) (eq .Values.tls.enabled true)) (and (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true)) -}}
+{{- /* Only rendered when the chart, rather than the operator, owns the external Services. */ -}}
+{{- $rsExt := ((.Values.replicaSet | default dict).extAccess | default dict) -}}
+{{- $shExt := ((.Values.sharding | default dict).extAccess | default dict) -}}
+{{ if and (eq ((.Values.externalAccess | default dict).mode | default "operator") "chart") (or (and (eq ($rsExt.enabled | default false) true) (eq .Values.tls.enabled true)) (eq ($shExt.enabled | default false) true)) -}}
 {{- $app := (.Values.clusterName | lower) -}}
 {{- $namespace := .Release.Namespace -}}
-{{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true) (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true) (hasKey .Values.sharding.extAccess "ports")}}
+{{- if and (eq ((.Values.sharding | default dict).enabled | default false) true) (eq ($shExt.enabled | default false) true) (hasKey $shExt "ports")}}
 
-{{- $exposeMethod := ternary "NodePort" "LoadBalancer" (eq (.Values.replicaSet.extAccess.exposeMethod | lower) "nodeport")}}
+{{- $exposeMethod := ternary "NodePort" "LoadBalancer" (eq ($shExt.exposeMethod | default "NodePort" | lower) "nodeport")}}
 {{- range $index, $value := .Values.sharding.extAccess.ports }}
 ---
 apiVersion: v1
@@ -26,11 +29,11 @@ spec:
     statefulset.kubernetes.io/pod-name: {{ $app }}-mongos-{{$index}}
     controller: mongodb-enterprise-operator
   sessionAffinity: None
-  type: NodePort
+  type: {{ $exposeMethod }}
 {{- end }}
 
-{{- else if  and (hasKey .Values "replicaSet") (hasKey .Values.replicaSet "enabled") (eq .Values.replicaSet.enabled true) (hasKey .Values.replicaSet "extAccess") (hasKey .Values.replicaSet.extAccess "enabled") (eq .Values.replicaSet.extAccess.enabled true)}}
-{{- $exposeMethod := ternary "NodePort" "LoadBalancer" (eq (.Values.replicaSet.extAccess.exposeMethod | lower) "nodeport")}}
+{{- else if and (eq ((.Values.replicaSet | default dict).enabled | default false) true) (eq ($rsExt.enabled | default false) true)}}
+{{- $exposeMethod := ternary "NodePort" "LoadBalancer" (eq ($rsExt.exposeMethod | default "NodePort" | lower) "nodeport")}}
 {{- range $index, $value := .Values.replicaSet.extAccess.ports }}
 
 ---

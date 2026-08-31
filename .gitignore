@@ -4,3 +4,4 @@ values/production/*
 values/test/*
 data
 kubeconfig
+.claude

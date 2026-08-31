@@ -1,9 +1,32 @@
 ---
+repositories:
+  - name: mongodb
+    url: https://mongodb.github.io/helm-charts
+
+environments:
+  dev:
+    values:
+      - ./values/dev/values.yaml
+  prod:
+    values:
+      - ./values/prod/values.yaml
+
 helmDefaults:
   wait: false
+
 releases:
+  # MongoDB Controllers for Kubernetes. Note that Helm installs the CRDs from the
+  # chart's crds/ directory on first install only, and never upgrades them, so
+  # scripts/apply-crds.sh must be run whenever MCK_VERSION changes.
+  - name: mongodb-kubernetes-operator
+    namespace: {{ requiredEnv "NS" }}
+    chart: mongodb/mongodb-kubernetes
+    version: {{ env "MCK_VERSION" | default "1.11.0" }}
+
   - name: {{ requiredEnv "ENV" }}-mongodb
     namespace: {{ requiredEnv "NS" }}
     chart: ./charts
+    needs:
+      - mongodb-kubernetes-operator
     values:
-    - ./values/{{ requiredEnv "ENV" }}/values.yaml
+      - ./values/{{ requiredEnv "ENV" }}/values.yaml

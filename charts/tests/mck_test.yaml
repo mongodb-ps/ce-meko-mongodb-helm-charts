@@ -1,0 +1,65 @@
+suite: MCK 1.11.0 compatibility
+templates:
+  - mongodb-deployment.yaml
+values:
+  - ../../examples/replica_set_single_disk/values.yaml
+tests:
+  - it: uses the MCK init container name and the unchanged database container name
+    asserts:
+      - equal:
+          path: spec.podSpec.podTemplate.spec.initContainers[0].name
+          value: mongodb-kubernetes-init-database
+      - equal:
+          path: spec.podSpec.podTemplate.spec.containers[0].name
+          value: mongodb-enterprise-database
+
+  - it: never emits exposedExternally, which MCK removed
+    asserts:
+      - notExists:
+          path: spec.exposedExternally
+      - notExists:
+          path: spec.security.tls.exposedExternally
+
+  - it: emits externalAccess with an operator managed Service by default
+    asserts:
+      - equal:
+          path: spec.externalAccess.externalService.spec.type
+          value: NodePort
+
+  - it: omits externalService when the chart owns the Services
+    set:
+      externalAccess.mode: chart
+    asserts:
+      - notExists:
+          path: spec.externalAccess.externalService
+
+  - it: defaults to the static architecture
+    asserts:
+      - equal:
+          path: metadata.annotations["mongodb.com/v1.architecture"]
+          value: static
+
+  - it: honours staticPods false
+    set:
+      staticPods: false
+    asserts:
+      - equal:
+          path: metadata.annotations["mongodb.com/v1.architecture"]
+          value: non-static
+
+  - it: renders a replica set
+    asserts:
+      - equal:
+          path: spec.type
+          value: ReplicaSet
+      - equal:
+          path: spec.members
+          value: 3
+
+  - it: honours imagePullSecrets rather than hardcoding regcred
+    set:
+      imagePullSecrets: my-secret
+    asserts:
+      - equal:
+          path: spec.podSpec.podTemplate.spec.imagePullSecrets[0].name
+          value: my-secret

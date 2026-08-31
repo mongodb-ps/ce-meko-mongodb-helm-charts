@@ -9,19 +9,17 @@
     "mongoDBAdminPasswdSecret"
   ],
   "properties": {
-    "operator": {
-      "type": "string",
-      "pattern": "^([Mm][Ee][Kk][Oo]|[Mm][Cc][Kk])$"
-    },
     "staticPods": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Use the static architecture (no init container pulls at runtime). MCK 1.11.0 defaults to non-static; the chart sets the mongodb.com/v1.architecture annotation explicitly, defaulting to static."
     },
     "clusterName": {
       "type": "string"
     },
     "mongoDBVersion": {
       "type": "string",
-      "pattern": "(^(?:[0-9]\\.){2}[0-9]{1,2}-ent$)"
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-ent)?$",
+      "description": "MongoDB server version. Use the \"-ent\" suffix for MongoDB Enterprise Advanced, which is required for LDAP, auditing and encryption at rest."
     },
     "logLevel": {
       "type": "string",
@@ -98,6 +96,13 @@
               "type": "string"
             }
           }
+        },
+        "additionalCertificateDomains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Extra SAN domains added to the member certificates."
         }
       }
     },
@@ -117,7 +122,7 @@
             "enabled": {
               "type": "boolean"
             }
-          } 
+          }
         },
         "ldap": {
           "type": "object",
@@ -169,7 +174,21 @@
                 }
               }
             }
-          } 
+          },
+          "if": {
+            "properties": {
+              "enabled": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "servers",
+              "bindUserDN",
+              "bindUserSecret"
+            ]
+          }
         }
       }
     },
@@ -222,7 +241,7 @@
                 "properties": {
                   "persistenceType": {
                     "type": "string",
-                    "pattern": "(^single|multiple$)"
+                    "pattern": "^(single|multi)$"
                   },
                   "if": {
                     "properties": {
@@ -271,7 +290,7 @@
                   },
                   "persistenceType": {
                     "type": "string",
-                    "pattern": "(^single|multiple$)"
+                    "pattern": "^(single|multi)$"
                   },
                   "if": {
                     "properties": {
@@ -374,7 +393,7 @@
               },
               "persistenceType": {
                 "type": "string",
-                "pattern": "(^single|multiple$)"
+                "pattern": "^(single|multi)$"
               },
               "if": {
                 "properties": {
@@ -458,10 +477,153 @@
             }
           }
         }
-      }    
+      }
     },
     "agent": {
       "type": "object"
+    },
+    "externalAccess": {
+      "type": "object",
+      "description": "How external access Services are created. \"operator\" lets MCK create <pod>-svc-external from spec.externalAccess; \"chart\" renders them from mongodb-svc.yaml instead.",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "operator",
+            "chart"
+          ]
+        },
+        "externalDomain": {
+          "type": "string",
+          "description": "Domain used to build member hostnames, <name>-<idx>.<externalDomain>. Cannot be changed after deployment."
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "backup": {
+      "type": "object",
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "enabled",
+            "disabled",
+            "terminated"
+          ]
+        },
+        "assignmentLabels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "autoTerminateOnDeletion": {
+          "type": "boolean"
+        },
+        "encryption": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "kmip": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "client": {
+                  "type": "object",
+                  "required": [
+                    "clientCertificatePrefix"
+                  ],
+                  "properties": {
+                    "clientCertificatePrefix": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "snapshotSchedule": {
+          "type": "object",
+          "properties": {
+            "snapshotIntervalHours": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "snapshotRetentionDays": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "dailySnapshotRetentionDays": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "weeklySnapshotRetentionWeeks": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "monthlySnapshotRetentionMonths": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pointInTimeWindowHours": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "clusterCheckpointIntervalMin": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "referenceHourOfDay": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            },
+            "referenceMinuteOfHour": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 59
+            },
+            "fullIncrementalDayOfWeek": {
+              "type": "string",
+              "enum": [
+                "SUNDAY",
+                "MONDAY",
+                "TUESDAY",
+                "WEDNESDAY",
+                "THURSDAY",
+                "FRIDAY",
+                "SATURDAY"
+              ]
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "enabled"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "snapshotSchedule"
+        ]
+      }
     }
   },
   "$defs": {

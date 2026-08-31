@@ -52,8 +52,6 @@
       - [replicaSet.resources.requests.cpu](#replicasetresourcesrequestscpu)
       - [replicaSet.resources.requests.mem](#replicasetresourcesrequestsmem)
       - [replicaSet.storage.persistenceType](#replicasetstoragepersistencetype)
-      - [replicaSet.storage.nfs](#replicasetstoragenfs)
-      - [replicaSet.storage.nfsInitImage](#replicasetstoragenfsinitimage)
       - [replicaSet.storage.single.size](#replicasetstoragesinglesize)
       - [replicaSet.storage.single.storageClass](#replicasetstoragesinglestorageclass)
       - [replicaSet.storage.multi.data.size](#replicasetstoragemultidatasize)
@@ -82,8 +80,6 @@
       - [sharding.shardSrv.resources.requests.cpu](#shardingshardsrvresourcesrequestscpu)
       - [sharding.shardSrv.resources.requests.mem](#shardingshardsrvresourcesrequestsmem)
       - [sharding.shardSrv.storage.persistenceType](#shardingshardsrvstoragepersistencetype)
-      - [sharding.shardSrv.storage.nfs](#shardingshardsrvstoragenfs)
-      - [sharding.shardSrv.storage.nfsInitImage](#shardingshardsrvstoragenfsinitimage)
       - [sharding.shardSrv.storage.single.size](#shardingshardsrvstoragesinglesize)
       - [sharding.shardSrv.storage.single.storageClass](#shardingshardsrvstoragesinglestorageclass)
       - [sharding.shardSrv.storage.multi.data.size](#shardingshardsrvstoragemultidatasize)
@@ -98,8 +94,6 @@
       - [sharding.configSrv.resources.requests.cpu](#shardingconfigsrvresourcesrequestscpu)
       - [sharding.configSrv.resources.requests.mem](#shardingconfigsrvresourcesrequestsmem)
       - [sharding.configSrv.storage.persistenceType](#shardingconfigsrvstoragepersistencetype)
-      - [sharding.configSrv.storage.nfs](#shardingconfigsrvstoragenfs)
-      - [sharding.configSrv.storage.nfsInitImage](#shardingconfigsrvstoragenfsinitimage)
       - [sharding.configSrv.storage.single.size](#shardingconfigsrvstoragesinglesize)
       - [sharding.configSrv.storage.single.storageClass](#shardingconfigsrvstoragesinglestorageclass)
       - [sharding.configSrv.storage.multi.data.size](#shardingconfigsrvstoragemultidatasize)
@@ -117,20 +111,42 @@
       - [sharding.extAccess.port](#shardingextaccessport)
   - [Predeployment Checklist](#predeployment-checklist)
   - [Run](#run)
+    - [Deploying with Helmfile](#deploying-with-helmfile)
+    - [Deploying with Helm](#deploying-with-helm)
+    - [Checking the Deployment](#checking-the-deployment)
+  - [Testing the Helm Charts](#testing-the-helm-charts)
+  - [Updating the Helm Charts for a New MCK Release](#updating-the-helm-charts-for-a-new-mck-release)
 
 ## Compatability
 
-This version of the Helm charts has been tested with MongoDB Kubernetes Operator version(s):
-* 1.16.x
-* 1.17.x
+This version of the Helm charts targets [MongoDB Controllers for Kubernetes (MCK)](https://www.mongodb.com/docs/kubernetes/current/) __1.11.0__, which replaces the MongoDB Enterprise Kubernetes Operator (MEKO).
+
+|Component|Version|
+|--------------------------|------------------------------------|
+|MongoDB Controllers for Kubernetes (MCK)|1.11.0|
+|Kubernetes|1.34 - 1.36|
+|OpenShift|4.22|
+|MongoDB Ops Manager|7.0 and 8.0, and Cloud Manager|
+|MongoDB|Any actively supported (non-EOL) release|
+
+The MCK version the charts are built against is recorded in `charts/Chart.yaml`, as both `appVersion` and the `mongodb.com/mck-version` annotation.
+
+If you are still running MEKO, follow the MongoDB [migration guide](https://www.mongodb.com/docs/kubernetes/current/tutorial/migrate-to-mck/) before using these charts. In short: upgrade MEKO to 1.33, scale the MEKO deployment to zero replicas, apply the MCK CRDs, then install MCK. The `MongoDB` and `MongoDBUser` resources themselves need no changes.
 
 # Breaking Changes
 
-This version adds values for sharded clusters and moves replica set-specific settings to its own object.
+This version targets MCK and will not deploy against MEKO:
+
+* The `operator` value has been removed. The charts always render the MCK container names.
+* `spec.exposedExternally`, which MCK removed, has been replaced by `spec.externalAccess`. External access is now configured through the new `externalAccess` value.
+* The architecture annotation is now always set, and defaults to `static` via the new `staticPods` value.
+* `helmfile.yaml` now installs the MCK operator alongside the deployment.
+
+The previous version added values for sharded clusters and moved replica set-specific settings to its own object.
 
 # Description
 
-The series of Helm Charts to deploy MongoDB Enterprise Advanced replica sets within Kubernetes with the MongoDB Kubernetes Operator and Ops Manager.
+The series of Helm Charts to deploy MongoDB Enterprise Advanced replica sets within Kubernetes with MongoDB Controllers for Kubernetes (MCK) and Ops Manager.
 
 The `/examples` directory has `values.yaml` examples for replica sets and sharded clusters.
 
@@ -147,18 +163,24 @@ The `/examples` directory has `values.yaml` examples for replica sets and sharde
 
 ## Prerequisites
 
-The [MongoDB Enterprise Kubernetes Operator](https://docs.mongodb.com/kubernetes-operator/master/) and [MongoDB Ops Manager](https://docs.opsmanager.mongodb.com/current/application/) must be installed and operation. The Kubernetes Operator must be able to communicate with Ops Manager. Instructions on installing the MongoDB Kubernetes Operator can be found in the MongoDB [documentation](https://docs.mongodb.com/kubernetes-operator/master/installation/). MongoDB Ops Manager should be installed by the MongoDB Professional Services team so it is installed and configured securely and correctly.
+[MongoDB Controllers for Kubernetes (MCK)](https://www.mongodb.com/docs/kubernetes/current/) and [MongoDB Ops Manager](https://docs.opsmanager.mongodb.com/current/application/) must be installed and operational. MCK must be able to communicate with Ops Manager. Instructions on installing MCK can be found in the MongoDB [documentation](https://www.mongodb.com/docs/kubernetes/current/installation/). MongoDB Ops Manager should be installed by the MongoDB Professional Services team so it is installed and configured securely and correctly.
 
-[Helm](https://helm.sh/docs/intro/install/) is required to be installed and [Helmfile](https://github.com/roboll/helmfile) is also highly recommended. If Helmfile is used you will also need [Helm-Diff](https://github.com/databus23/helm-diff).
+The `helmfile.yaml` in this repository installs MCK for you. See [Run](#run) for both the Helmfile and the plain Helm approach, and for applying the CRDs.
+
+[Helm](https://helm.sh/docs/intro/install/) is required to be installed. [Helmfile](https://github.com/helmfile/helmfile) is optional but recommended, as it installs the operator and the MongoDB deployment together and in the right order. [Helm-Diff](https://github.com/databus23/helm-diff) is needed for `helmfile diff` and `helm diff`, with either approach.
 
 These Helm charts assume PVs and Storage classes already exist within the Kubernetes cluster.
 
 
 ## Set Up
 
-Two environment variables are required, called `ENV` and `NS` (both case senstive). The first describes the selected environment for deployment, which correspondes to a directory under the `values` directory, and the second describes the Kubernetes namespace.
+The charts can be used with [Helmfile](#deploying-with-helmfile), which also installs the operator and keeps the two releases in the right order, or with [Helm directly](#deploying-with-helm). Helmfile is recommended, but nothing in the charts requires it.
 
-The variables for each deployment are contained in the `values.yaml`. The `values.yaml` file for the selected environment must reside in a directory under `values/<ENV>` such as `values/dev/values.yaml` or `values/production/values.yaml`. Each **\<ENV\>** directory will be a different deployment. The `examples` directory contains an examples `values.yaml` file, plus there are examples under the `values` directory so the reader can see the structure.
+The variables for each deployment are contained in the `values.yaml`. If you are using Helmfile, the `values.yaml` file for the selected environment must reside in a directory under `values/<ENV>` such as `values/dev/values.yaml` or `values/production/values.yaml`. Each **\<ENV\>** directory will be a different deployment. The `examples` directory contains example `values.yaml` files so the reader can see the structure.
+
+Helmfile requires two environment variables, called `ENV` and `NS` (both case sensitive). The first describes the selected environment for deployment, which corresponds to a directory under the `values` directory, and the second describes the Kubernetes namespace. A third, `MCK_VERSION`, is optional and defaults to 1.11.0.
+
+If you are using Helm directly you can keep the `values.yaml` wherever you like and pass the path with `-f`.
 
 ## Deployment Requirements
 
@@ -276,6 +298,7 @@ The following table describes the common values required in the relevant `values
 |Key|Purpose|
 |--------------------------|------------------------------------|
 |clusterName|Name of the cluster, used for naming the pods and replica set name|
+|staticPods|Boolean to determine if the static architecture is used, default is `true`. MCK itself defaults to the non-static architecture, so the charts always set the `mongodb.com/v1.architecture` annotation explicitly|
 |mongoDBVersion|The version of MongoDB to installed, such as `5.0.8-ent` for MongoDB Enterprise 5.0.8 Enterprise Advanced|
 |mongoDBFCV|A string describing the Feature Compatibility Version of the deployment, default is "5.0"|
 |logLevel|Level of logging for MongoDB and agents, INFO or DEBUG|
@@ -298,6 +321,16 @@ The following table describes the common values required in the relevant `values
 |tlsEnabled.enabled|Boolean describing if TLS is used in the cluster. (This should always be true)|
 |tlsEnabled.caConfigMap|Name of the configMap for the CA certificate|
 |mongoDBAdminPasswdSecret|The secret containing the MongoDB first user|
+|externalAccess.mode|Either `operator` (default), where MCK creates the external services from `spec.externalAccess`, or `chart`, where the charts render the services themselves|
+|externalAccess.externalDomain|Optional domain used to build the member hostnames, `<name>-<index>.<externalDomain>`. Cannot be changed after deployment|
+|externalAccess.annotations|Optional map of annotations applied to the services MCK creates|
+|imagePullSecrets|The name of the secret used to pull the MongoDB images, if the registry requires authentication|
+|backup.mode|One of `enabled`, `disabled` or `terminated`|
+|backup.assignmentLabels|Optional array of backup assignment labels|
+|backup.autoTerminateOnDeletion|Boolean to determine if the backup is terminated when the deployment is deleted. Replica sets only|
+|backup.encryption.kmip.enabled|Boolean to determine if KMIP encryption is used for backups|
+|backup.encryption.kmip.client.clientCertificatePrefix|The prefix of the secret holding the KMIP client certificate|
+|backup.snapshotSchedule.*|The Ops Manager snapshot schedule. See [backup](#backup) below|
 |additionalUsers[n]|Array of additional database users to create|
 |additionalUsers[n].username| Username of the database user to manage|
 |additionalUsers[n].passwdSecret|The secret name that contains the password for the user|
@@ -444,6 +477,66 @@ Each entry in the array will create a new MongoDB User (MDBU) resource in Kubern
 
 This is important to remember of creating the blockstore or oplogstore for Ops Manager as the MDBU resource name is required.
 
+### staticPods
+
+MCK supports two architectures. In the __static__ architecture the MongoDB binaries are baked into the images and no init container downloads them at runtime, which is what you want in an air-gapped or tightly controlled environment. In the __non-static__ architecture the agent downloads the MongoDB binaries when the pod starts.
+
+MCK 1.11.0 itself defaults to the non-static architecture, via the `MDB_DEFAULT_ARCHITECTURE` environment variable on the operator. These charts do not rely on that default; they always set the `mongodb.com/v1.architecture` annotation on the deployment, so what you get does not depend on how the operator was installed. The default is `static`.
+
+```yaml
+staticPods: true
+```
+
+### External Access
+
+MCK removed `spec.exposedExternally` and replaced it with `spec.externalAccess`. The `externalAccess` value controls who creates the services:
+
+|Mode|Behaviour|
+|--------------------------|------------------------------------|
+|`operator` (default)|The charts render `spec.externalAccess` and MCK creates one `<pod-name>-svc-external` service per member|
+|`chart`|The charts render the services themselves, from `sharding.extAccess.ports` or `replicaSet.extAccess.ports`|
+
+Use `operator` unless you need to pin the NodePort numbers or the `clusterIP` of each service, in which case use `chart`.
+
+```yaml
+externalAccess:
+  mode: operator
+  externalDomain: mongodb.local
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: mongodb.local
+```
+
+`externalAccess.externalDomain` sets the domain used to build the member hostnames that are registered with Ops Manager, as `<clusterName>-<index>.<externalDomain>`. __It cannot be changed after the deployment is created.__
+
+### Backup
+
+Backup is configured in Ops Manager, and is optional. If the `backup` object is absent from the `values.yaml` no backup configuration is sent to Ops Manager at all.
+
+```yaml
+backup:
+  mode: enabled
+  autoTerminateOnDeletion: false
+  encryption:
+    enabled: true
+    kmip:
+      enabled: true
+      client:
+        clientCertificatePrefix: mongodb-kmip-client-pem
+  snapshotSchedule:
+    snapshotIntervalHours: 6
+    snapshotRetentionDays: 3
+    dailySnapshotRetentionDays: 7
+    weeklySnapshotRetentionWeeks: 4
+    monthlySnapshotRetentionMonths: 0
+    pointInTimeWindowHours: 24
+    referenceHourOfDay: 0
+    referenceMinuteOfHour: 0
+    fullIncrementalDayOfWeek: SUNDAY
+    clusterCheckpointIntervalMin: 15
+```
+
+`autoTerminateOnDeletion` applies to replica sets only, and `clusterCheckpointIntervalMin` applies to sharded clusters only; each is only rendered for the relevant deployment type.
+
 ## Replica Set Specific Settings
 
 The following are settings required if a replica set is to be deployed.
@@ -499,6 +592,10 @@ For a NodePort service, a Kubernetes worker node, or an address that is resolved
 
 In most Kubernetes environments the NodePort port range is 30000 to 32767. The port numbers cannot overlap with port numbers already in use in any deployment of any kind in the Kubernetes cluster.
 
+One `replicaSet.extAccess.ports` entry is required per replica set member, and `tls.enabled` must be `true`, because MCK uses SNI to serve the horizons. Both are checked when the charts are rendered.
+
+With the default `externalAccess.mode` of `operator` the services are created by MCK from the `spec.externalAccess` stanza and the `clusterIP` values are ignored. Set `externalAccess.mode` to `chart` to have the charts render the services, and therefore honour `clusterIP`, instead.
+
 To access from external to Kubernetes the connection string for a three-member replica set would look similar to:
 
 ```shell
@@ -522,8 +619,6 @@ The following table describes the values required in the relevant `values.yaml` 
 |replicaSet.resources.requests.cpu|The initial CPU the containers can be allocated|
 |replicaSet.resources.requests.mem|The initial memory the containers can be allocated, include units|
 |replicaSet.storage.persistenceType|This is either `single` for all data one one partition, or `multi` for separate partiions for `data`, `journal`, and `logs`|
-|replicaSet.storage.nfs|Boolean value to determine if NFS if used for persistence storage, which requires a further init container to fix permissions on NFS mount|
-|replicaSet.storage.nfsInitImage|Image name a tag for the init container to perform the NFS permissions modification. Defaults to the same init container image as the database|
 |replicaSet.storage.single.size|The size of the volume for all storage, include units|
 |replicaSet.storage.single.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for all the storage. Default is ""|
 |replicaSet.storage.multi.data.size|The size of the volume for database data storage, include units|
@@ -571,22 +666,6 @@ If separate partitions are required for data, journal, and logs then select `mul
 * `replicaSet.storage.multi.journal.storageClass`
 * `replicaSet.storage.multi.logs.size`
 * `replicaSet.storage.multi.logs.storageClass`
-
-#### replicaSet.storage.nfs
-
-A boolean to determine if NFS is used as the persistent storage. If this is `true` then an additional init container is prepended to the init container array in the statefulSet to that will `chown`` the permissions of the NFS mount to be that of the mongod user. The Kubernetes Operator uses 2000:2000 for the UID and GID of the mongod user.
-
-This init container will run as root so the permissions can be set. This is done via setting the `runAsUser` to `0` and the `runAsNonRoot` to `false`. Ensure you understand the implications of this.
-
-This will chown `/data`, `/journal` and `/var/log/mongodb-mms-automation` to 2000:2000
-
-Default is `false`
-
-#### replicaSet.storage.nfsInitImage
-
-The image to use for the init container to perform the `chown` on the NFS mounts.
-
-The default is `quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9"`
 
 #### replicaSet.storage.single.size
 
@@ -773,7 +852,11 @@ To use a NodePort service, a Kubernetes worker node or an address that is resolv
 
 In most Kubernetes environments the NodePort port range is 30000 to 32767. The port numbers __CANNOT__ overlap with port numbers already in use in any deployment of any kind in the Kubernetes cluster.
 
-To allow external access set the `sharding.extAccess.enabled` setting to true. To set the port used externally, set the `sharding.extAccess.port` to a number value of the port, such as `31002`. If you do not set the port number you will need to use `kubectl` commands to find the port number of the service (named *****), or via your Kubernetes dashboard (if you have one).
+To allow external access set the `sharding.extAccess.enabled` setting to true and `sharding.extAccess.exposeMethod` to either `NodePort` or `LoadBalancer`.
+
+With the default `externalAccess.mode` of `operator`, MCK creates one service per mongos pod, named `<clusterName>-mongos-<index>-svc-external`, from the `spec.externalAccess` stanza. Use `kubectl get svc` to find the allocated port, or set `externalAccess.externalDomain` so that the mongos pool is registered in Ops Manager under a domain you control.
+
+If you need to pin the NodePort numbers, set `externalAccess.mode` to `chart` and list the ports in `sharding.extAccess.ports`; the charts will then render the services instead of MCK.
 
 To access from external to Kubernetes the connection string would look similar to:
 
@@ -799,8 +882,6 @@ The following table describes the values required in the relevant `values.yaml` 
 |sharding.shardSrv.resources.requests.cpu|The initial CPU the containers can be allocated|
 |sharding.shardSrv.resources.requests.mem|The initial memory the containers can be allocated, include units|
 |sharding.shardSrv.storage.persistenceType|This is either `single` for all data one one partition, or `multi` for separate partions for `data`, `journal`, and `logs`|
-|sharding.shardSrv.storage.nfs|Boolean value to determine if NFS if used for persistence storage, which requires a further init container to fix permissions on NFS mount|
-|sharding.shardSrv.storage.nfsInitImage|Image name and tag for the init container to perform the NFS permissions modification. Defaults to the same init container image as the database|
 |sharding.shardSrv.storage.single.size|The size of the volume for all storage, include units|
 |sharding.shardSrv.storage.single.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for all the storage. Default is ""|
 |sharding.shardSrv.storage.multi.data.size|The size of the volume for database data storage, include units|
@@ -815,8 +896,6 @@ The following table describes the values required in the relevant `values.yaml` 
 |sharding.configSrv.resources.requests.cpu|The initial CPU the containers can be allocated|
 |sharding.configSrv.resources.requests.mem|The initial memory the containers can be allocated, include units|
 |sharding.configSrv.storage.persistenceType|This is either `single` for all data one one partition, or `multi` for separate partiions for `data`, `journal`, and `logs`|
-|sharding.configSrv.storage.nfs|Boolean value to determine if NFS if used for persistence storage, which requires a further init container to fix permissions on NFS mount|
-|sharding.configSrv.storage.nfsInitImage|Image name a tag for the init container to perform the NFS permissions modification. Defaults to the same init container image as the database|
 |sharding.configSrv.storage.single.size|The size of the volume for all storage, include units|
 |sharding.configSrv.storage.single.storageClass|The name of the StorageClass to use for the PersistentVolumeClaim for all the storage. Default is ""|
 |sharding.configSrv.storage.multi.data.size|The size of the volume for database data storage, include units|
@@ -868,22 +947,6 @@ If separate partitions are required for data, journal, and logs then select `mul
 * `sharding.shardSrv.storage.multi.journal.storageClass`
 * `sharding.shardSrv.storage.multi.logs.size`
 * `sharding.shardSrv.storage.multi.logs.storageClass`
-
-#### sharding.shardSrv.storage.nfs
-
-A boolean to determine if NFS is used as the persistent storage. If this is `true` then an additional init container is prepended to the init container array in the statefulSet to that will `chown`` the permissions of the NFS mount to be that of the mongod user. The Kubernetes Operator uses 2000:2000 for the UID and GID of the mongod user.
-
-This init container will run as root so the permissions can be set. This is done via setting the `runAsUser` to `0` and the `runAsNonRoot` to `false`. Ensure you understand the implications of this.
-
-This will chown `/data`, `/journal` and `/var/log/mongodb-mms-automation` to 2000:2000
-
-Default is `false`
-
-#### sharding.shardSrv.storage.nfsInitImage
-
-The image to use for the init container to perform the `chown` on the NFS mounts.
-
-The default is `quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9"`
 
 #### sharding.shardSrv.storage.single.size
 
@@ -949,22 +1012,6 @@ If separate partitions are required for data, journal, and logs then select `mul
 * `sharding.configSrv.storage.multi.journal.storageClass`
 * `sharding.configSrv.storage.multi.logs.size`
 * `sharding.configSrv.storage.multi.logs.storageClass`
-
-#### sharding.configSrv.storage.nfs
-
-A boolean to determine if NFS is used as the persistent storage. If this is `true` then an additional init container is prepended to the init container array in the statefulSet to that will `chown`` the permissions of the NFS mount to be that of the mongod user. The Kubernetes Operator uses 2000:2000 for the UID and GID of the mongod user.
-
-This init container will run as root so the permissions can be set. This is done via setting the `runAsUser` to `0` and the `runAsNonRoot` to `false`. Ensure you understand the implications of this.
-
-This will chown `/data`, `/journal` and `/var/log/mongodb-mms-automation` to 2000:2000
-
-Default is `false`
-
-#### sharding.configSrv.storage.nfsInitImage
-
-The image to use for the init container to perform the `chown` on the NFS mounts.
-
-The default is `quay.io/mongodb/mongodb-enterprise-init-database-ubi:1.0.9"`
 
 #### sharding.configSrv.storage.single.size
 
@@ -1044,21 +1091,38 @@ Ensure all the following as satisfied before attempoting to deploy:
 - [ ] Configure external access (horizons) if required
 - [ ] Configure LDAP access if required
 - [ ] Ensure all values in the relevant `values.yaml` file set
+- [ ] MCK 1.11.0 CRDs applied (`./scripts/apply-crds.sh`)
 
 ## Run
 
-To use the Helm charts via helmfile perform the following:
+Both approaches deploy the same thing. The difference is that Helmfile also installs the MCK operator and orders the two releases for you, whereas with Helm you install the operator yourself first.
+
+Whichever you use, the MCK CRDs must be applied before the `MongoDB` resource can be created. Helm installs the CRDs bundled with the operator chart on the __first install only__ and never upgrades them, so they have to be applied separately whenever the MCK version changes:
+
+```shell
+MCK_VERSION=1.11.0 ./scripts/apply-crds.sh
+```
+
+### Deploying with Helmfile
+
+To deploy both the operator and the MongoDB deployment:
 
 ```shell
 ENV=dev NS=mongodb KUBECONFIG=$PWD/kubeconfig helmfile apply
 ```
 
-The `kubeconfig` is the config file to gain access to the Kubernetes cluster. The `ENV=dev` is the environment to use for the `values.yaml`, in this case an environment called `dev`.
+The `kubeconfig` is the config file to gain access to the Kubernetes cluster. The `ENV=dev` is the environment to use for the `values.yaml`, in this case an environment called `dev`, read from `values/dev/values.yaml`. The MCK version installed can be overridden with `MCK_VERSION`, and defaults to 1.11.0.
 
 To see what the actual YAML files will look like without applying them to Kubernetes use:
 
 ```shell
-ENV=dev helmfile template
+ENV=dev NS=mongodb helmfile template
+```
+
+To see what would change before applying it, which requires [Helm-Diff](https://github.com/databus23/helm-diff):
+
+```shell
+ENV=dev NS=mongodb KUBECONFIG=$PWD/kubeconfig helmfile diff
 ```
 
 To destroy the environment (the PersistentVolumes will remain) use the following command:
@@ -1066,3 +1130,125 @@ To destroy the environment (the PersistentVolumes will remain) use the following
 ```shell
 ENV=dev NS=mongodb KUBECONFIG=$PWD/kubeconfig helmfile destroy
 ```
+
+Note that `helmfile destroy` removes the operator as well as the MongoDB deployment.
+
+### Deploying with Helm
+
+First install the operator, once per cluster:
+
+```shell
+helm repo add mongodb https://mongodb.github.io/helm-charts
+helm repo update
+
+helm upgrade --install mongodb-kubernetes-operator mongodb/mongodb-kubernetes \
+  --version 1.11.0 \
+  --namespace mongodb --create-namespace
+```
+
+Wait for it to be ready:
+
+```shell
+kubectl -n mongodb rollout status deployment/mongodb-kubernetes-operator
+```
+
+Then deploy MongoDB itself:
+
+```shell
+helm upgrade --install dev-mongodb ./charts \
+  --namespace mongodb \
+  -f values/dev/values.yaml
+```
+
+To see what the actual YAML files will look like without applying them to Kubernetes use:
+
+```shell
+helm template dev-mongodb ./charts -f values/dev/values.yaml
+```
+
+To see what would change before applying it, which requires [Helm-Diff](https://github.com/databus23/helm-diff):
+
+```shell
+helm diff upgrade dev-mongodb ./charts --namespace mongodb -f values/dev/values.yaml
+```
+
+To remove the deployment (the PersistentVolumes will remain):
+
+```shell
+helm uninstall dev-mongodb --namespace mongodb
+```
+
+The operator is a separate release and is left alone by the above. To remove it as well:
+
+```shell
+helm uninstall mongodb-kubernetes-operator --namespace mongodb
+```
+
+### Checking the Deployment
+
+Either way, watch the deployment reach `Running`:
+
+```shell
+kubectl -n mongodb get mdb -w
+```
+
+If it does not, the operator log is the place to look:
+
+```shell
+kubectl -n mongodb logs deployment/mongodb-kubernetes-operator
+```
+## Testing the Helm Charts
+
+Four layers, cheapest first. The first three need no Kubernetes cluster at all.
+
+1. __Lint and render.__ Every example must lint and render cleanly:
+
+```shell
+for values in examples/*/values.yaml; do
+  helm lint charts/ -f "$values"
+  helm template test charts/ -f "$values" > /dev/null
+done
+```
+
+2. __Unit tests.__ The charts are essentially one large conditional template, so the unit tests are where most of the value is. They live in `charts/tests` and use [helm-unittest](https://github.com/helm-unittest/helm-unittest):
+
+```shell
+helm plugin install --verify=false https://github.com/helm-unittest/helm-unittest
+helm unittest charts/
+```
+
+They cover the container names, the architecture annotation, external access in both modes, the sharded and replica set paths, and that every values check fails on bad input.
+
+3. __CRD validation.__ Lint cannot tell you that MCK has deprecated or removed a field. `scripts/check-crd-drift.sh` renders every example and validates the result against the CRDs of a given MCK release with [kubeconform](https://github.com/yannh/kubeconform):
+
+```shell
+MCK_VERSION=1.11.0 ./scripts/check-crd-drift.sh
+```
+
+4. __End to end.__ Against a real cluster with MCK and a reachable Ops Manager, install a deployment and confirm it reaches `Running`:
+
+```shell
+ENV=dev NS=mongodb KUBECONFIG=$PWD/kubeconfig helmfile apply
+kubectl -n mongodb get mdb -w
+kubectl -n mongodb get pod <clusterName>-0 -o jsonpath='{.spec.initContainers[*].name}'
+```
+
+Steps 1 to 3 run on every pull request via `.github/workflows/charts.yaml`.
+
+## Updating the Helm Charts for a New MCK Release
+
+The MCK version is recorded in one place, `charts/Chart.yaml`, as `appVersion` and the `mongodb.com/mck-version` annotation. To move to a new release:
+
+1. Run the drift check against the new version:
+
+```shell
+MCK_VERSION=<new-version> ./scripts/check-crd-drift.sh
+```
+
+2. Fix anything the CRDs reject. Removed and renamed fields are the only upstream changes that can break these charts.
+3. Bump `appVersion` and, if the minimum supported Kubernetes version has moved, `kubeVersion` in `charts/Chart.yaml`.
+4. Bump the chart `version`: a minor bump for additive changes, a major bump if a value was removed or renamed.
+5. Update the compatibility table above and add a `CHANGELOG.md` entry.
+6. Update `MCK_VERSION` in `helmfile.yaml` and run `./scripts/apply-crds.sh` before the next `helmfile apply`.
+
+The scheduled job in `.github/workflows/charts.yaml` runs the drift check against the latest MCK release every week, so a breaking upstream change shows up as a failing job rather than a failed deployment. Note that the container names MCK uses, `mongodb-kubernetes-init-database` and `mongodb-enterprise-database`, are asserted in the unit tests: a rename upstream would otherwise silently stop the pod template overrides from applying.

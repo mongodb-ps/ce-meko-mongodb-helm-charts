@@ -1,0 +1,42 @@
+suite: values validation
+templates:
+  - mongodb-deployment.yaml
+values:
+  - ../../examples/replica_set_single_disk/values.yaml
+tests:
+  - it: rejects enabling neither
+    set:
+      replicaSet.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: one of sharding.enabled or replicaSet.enabled must be true
+
+  - it: rejects a horizon count that does not match the member count
+    set:
+      replicaSet.replicas: 5
+    asserts:
+      - failedTemplate:
+          errorMessage: replicaSet.extAccess.ports has 3 entries but replicaSet.replicas is 5; the operator requires one replica set horizon per member
+
+  - it: rejects external access without TLS
+    set:
+      tls.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: tls.enabled must be true to use replicaSet.extAccess; the operator requires TLS (SNI) for replica set horizons
+
+  - it: rejects LDAP without a bind user
+    set:
+      auth.ldap.bindUserDN: null
+    asserts:
+      - failedTemplate:
+          errorMessage: auth.ldap.bindUserDN is required when auth.ldap.enabled is true
+
+  - it: rejects enabling both a replica set and a sharded cluster
+    values:
+      - ../../examples/sharded_cluster_single_disk/values.yaml
+    set:
+      replicaSet.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: only one of sharding.enabled and replicaSet.enabled can be true

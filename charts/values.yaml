@@ -1,0 +1,48 @@
+---
+# Defaults for the mongodb-deployment chart.
+#
+# Only settings that are safe for every environment are set here. The
+# deployment specific settings below are deliberately left commented out so
+# that values.schema.json still forces you to supply them.
+
+# clusterName: rs-0
+# mongoDBVersion: 8.0.20-ent
+# mongoDBAdminPasswdSecret: adm-passwd
+# opsManager:
+#   tlsEnabled: true
+#   baseUrl: https://ops-manager.mongodb.local:8443
+#   orgId: 5e439737e976cc5e50a7b13e
+#   projectName: K8S-PROD-0
+#   omSecret: organisation-secret
+#   caConfigmap: om-ca-cert
+
+# Use the static architecture. MCK 1.11.0 defaults to non-static, so the chart
+# always sets the mongodb.com/v1.architecture annotation to be explicit.
+staticPods: true
+
+logLevel: INFO
+
+agent:
+  logLevel: INFO
+
+# How the external access Services are created:
+#   operator - MCK creates <pod>-svc-external from spec.externalAccess
+#   chart    - the Services are rendered by this chart, from mongodb-svc.yaml
+externalAccess:
+  mode: operator
+
+tls:
+  enabled: false
+
+auth:
+  allowNoManagedUsers: true
+  scram:
+    enabled: true
+  ldap:
+    enabled: false
+
+sharding:
+  enabled: false
+
+replicaSet:
+  enabled: true

@@ -1,0 +1,48 @@
+suite: sharded cluster
+templates:
+  - mongodb-deployment.yaml
+values:
+  - ../../examples/sharded_cluster_single_disk/values.yaml
+tests:
+  - it: renders a sharded cluster
+    asserts:
+      - equal:
+          path: spec.type
+          value: ShardedCluster
+      - equal:
+          path: spec.shardCount
+          value: 2
+
+  - it: puts external access at the spec level, where the CRD defines it
+    asserts:
+      - equal:
+          path: spec.externalAccess.externalService.spec.type
+          value: NodePort
+      - notExists:
+          path: spec.mongos.externalAccess
+
+  - it: uses the MCK init container name for every component
+    asserts:
+      - equal:
+          path: spec.shardPodSpec.podTemplate.spec.initContainers[0].name
+          value: mongodb-kubernetes-init-database
+      - equal:
+          path: spec.mongosPodSpec.podTemplate.spec.initContainers[0].name
+          value: mongodb-kubernetes-init-database
+      - equal:
+          path: spec.configSrvPodSpec.podTemplate.spec.initContainers[0].name
+          value: mongodb-kubernetes-init-database
+
+  - it: still applies security to a sharded cluster
+    asserts:
+      - equal:
+          path: spec.security.certsSecretPrefix
+          value: mdb
+      - contains:
+          path: spec.security.authentication.modes
+          content: SCRAM
+
+  - it: renders cleanly when no backup block is supplied
+    asserts:
+      - notExists:
+          path: spec.backup

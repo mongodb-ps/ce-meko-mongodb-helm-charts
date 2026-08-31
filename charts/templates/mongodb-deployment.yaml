@@ -1,15 +1,13 @@
+{{- include "mongodb-deployment.validate" . -}}
+{{- $sharded := and (hasKey .Values "sharding") (eq ((.Values.sharding | default dict).enabled | default false) true) -}}
 ---
 apiVersion: mongodb.com/v1
 kind: MongoDB
 metadata:
   name: {{ .Values.clusterName | lower }}
-  {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") (eq (.Values.staticPods | default true) true ) }}
   annotations:
-    mongodb.com/v1.architecture: "static"
-  {{- end }}
+    mongodb.com/v1.architecture: {{ ternary "static" "non-static" (ne (.Values.staticPods | toString) "false") | quote }}
 spec:
-{{- if (hasKey .Values "backup") }}
-{{- end }}
   version: {{ .Values.mongoDBVersion | quote }}
   {{- if (hasKey .Values "mongoDBFCV") }}
   {{- if and (kindIs "string" .Values.mongoDBFCV) (regexMatch "^\\d\\.\\d$" .Values.mongoDBFCV) }}
@@ -27,7 +25,7 @@ spec:
   credentials: {{ .Values.opsManager.omSecret }}
   persistent: true
   {{- /* Test for sharded cluster, this take precedence over replica set */ -}}
-  {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq (.Values.sharding.enabled  | default false) true)}}
+  {{- if $sharded }}
   type: ShardedCluster
   shardCount: {{ .Values.sharding.shardSrv.shards }}
   mongodsPerShardCount: {{ .Values.sharding.shardSrv.memberPerShard }}
@@ -36,28 +34,9 @@ spec:
   shard:
     agent:
       startupOptions:
-        logLevel: {{ .Values.agent.logLevel }}
-        {{- if (hasKey .Values.agent "startupOptions")}}
-        {{- range $key, $value := .Values.agent.startupOptions }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
-        {{- end }}
+        {{- include "mongodb-deployment.agentStartupOptions" . | trim | nindent 8 }}
     additionalMongodConfig:
-      {{- if .Values.tls.enabled }}
-      net:
-        tls:
-          mode: requireTLS
-          disabledProtocols: TLS1_0,TLS1_1
-      setParameter:
-        suppressNoTLSPeerCertificateWarning: true
-      {{- end }}
-      systemLog:
-        {{- if and (hasKey .Values "logLevel") (eq (upper .Values.logLevel) "DEBUG") }}
-        verbosity: 2
-        {{- else }}
-        verbosity: 0
-        {{- end }}
-        timeStampFormat: iso8601-local
+      {{- include "mongodb-deployment.additionalMongodConfig" . | trim | nindent 6 }}
   shardPodSpec:
     podTemplate:
       spec:
@@ -66,11 +45,7 @@ spec:
           - name: {{ .Values.imagePullSecrets }}
         {{- end }}
         initContainers:
-        {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
           - name: mongodb-kubernetes-init-database
-        {{- else }}
-          - name: mongodb-enterprise-init-database
-        {{- end }}
         containers:
           - name: mongodb-enterprise-database
             resources:
@@ -101,28 +76,9 @@ spec:
   mongos:
     agent:
       startupOptions:
-        logLevel: {{ .Values.agent.logLevel }}
-        {{- if (hasKey .Values.agent "startupOptions")}}
-        {{- range $key, $value := .Values.agent.startupOptions }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
-        {{- end }}
+        {{- include "mongodb-deployment.agentStartupOptions" . | trim | nindent 8 }}
     additionalMongodConfig:
-      {{- if .Values.tls.enabled }}
-      net:
-        tls:
-          mode: requireTLS
-          disabledProtocols: TLS1_0,TLS1_1
-      setParameter:
-        suppressNoTLSPeerCertificateWarning: true
-      {{- end }}
-      systemLog:
-        {{- if and (hasKey .Values "logLevel") (eq (upper .Values.logLevel) "DEBUG") }}
-        verbosity: 2
-        {{- else }}
-        verbosity: 0
-        {{- end }}
-        timeStampFormat: iso8601-local
+      {{- include "mongodb-deployment.additionalMongodConfig" . | trim | nindent 6 }}
   mongosPodSpec:
     podTemplate:
       spec:
@@ -131,11 +87,7 @@ spec:
           - name: {{ .Values.imagePullSecrets }}
         {{- end }}
         initContainers:
-        {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
           - name: mongodb-kubernetes-init-database
-        {{- else }}
-          - name: mongodb-enterprise-init-database
-        {{- end }}
         containers:
           - name: mongodb-enterprise-database
             resources:
@@ -149,28 +101,9 @@ spec:
   configSrv:
     agent:
       startupOptions:
-        logLevel: {{ .Values.agent.logLevel }}
-        {{- if (hasKey .Values.agent "startupOptions")}}
-        {{- range $key, $value := .Values.agent.startupOptions }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
-        {{- end }}
-    additionalMongodConfig: 
-      {{- if .Values.tls.enabled }}
-      net:
-        tls:
-          mode: requireTLS
-          disabledProtocols: TLS1_0,TLS1_1
-      setParameter:
-        suppressNoTLSPeerCertificateWarning: true
-      {{- end }}
-      systemLog:
-        {{- if and (hasKey .Values "logLevel") (eq (upper .Values.logLevel) "DEBUG") }}
-        verbosity: 2
-        {{- else }}
-        verbosity: 0
-        {{- end }}
-        timeStampFormat: iso8601-local
+        {{- include "mongodb-deployment.agentStartupOptions" . | trim | nindent 8 }}
+    additionalMongodConfig:
+      {{- include "mongodb-deployment.additionalMongodConfig" . | trim | nindent 6 }}
   configSrvPodSpec:
     podTemplate:
       spec:
@@ -179,11 +112,7 @@ spec:
           - name: {{ .Values.imagePullSecrets }}
         {{- end }}
         initContainers:
-        {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
           - name: mongodb-kubernetes-init-database
-        {{- else }}
-          - name: mongodb-enterprise-init-database
-        {{- end }}
         containers:
           - name: mongodb-enterprise-database
             resources:
@@ -211,23 +140,18 @@ spec:
           storage: {{ .Values.sharding.configSrv.storage.multi.logs.size }}
           storageClass: {{ .Values.sharding.configSrv.storage.multi.logs.storageClass }}
       {{- end }}
-  {{- if and (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true)}}
-  exposedExternally: true
-  {{- end }}
   {{- else }}
   type: ReplicaSet
   members: {{ .Values.replicaSet.replicas }}
   podSpec:
     podTemplate:
       spec:
+        {{- if (hasKey .Values "imagePullSecrets") }}
         imagePullSecrets:
-          - name: regcred
-        initContainers:
-        {{- if and (hasKey .Values "operator") (eq (.Values.operator | lower) "meko") }}
-          - name: mongodb-kubernetes-init-database
-        {{- else }}
-          - name: mongodb-enterprise-init-database
+          - name: {{ .Values.imagePullSecrets }}
         {{- end }}
+        initContainers:
+          - name: mongodb-kubernetes-init-database
         containers:
           - name: mongodb-enterprise-database
             resources:
@@ -255,22 +179,9 @@ spec:
           storage: {{ .Values.replicaSet.storage.multi.logs.size }}
           storageClass: {{ .Values.replicaSet.storage.multi.logs.storageClass }}
       {{- end }}
-  additionalMongodConfig: 
-      {{- if .Values.tls.enabled }}
-      net:
-        tls:
-          mode: requireTLS
-          disabledProtocols: TLS1_0,TLS1_1
-      setParameter:
-        suppressNoTLSPeerCertificateWarning: true
-      {{- end }}
-      systemLog:
-        {{- if eq (.Values.logLevel | upper) "DEBUG" }}
-        verbosity: 2
-        {{- end }}
-        timeStampFormat: iso8601-local
+  additionalMongodConfig:
+    {{- include "mongodb-deployment.additionalMongodConfig" . | trim | nindent 4 }}
   {{ if and (hasKey .Values.replicaSet "extAccess") (hasKey .Values.replicaSet.extAccess "enabled") (eq .Values.replicaSet.extAccess.enabled true) (eq .Values.tls.enabled true) -}}
-  exposedExternally: true
   connectivity:
     replicaSetHorizons:
       {{- range .Values.replicaSet.extAccess.ports }}
@@ -279,16 +190,17 @@ spec:
   {{- end }}
   agent:
     startupOptions:
-      logLevel: {{ .Values.agent.logLevel }}
-      {{- if (hasKey .Values.agent "startupOptions")}}
-      {{- range $key, $value := .Values.agent.startupOptions }}
-      {{ $key }}: {{ ($value | toString) | quote }}
-      {{- end }}
-      {{- end }}
+      {{- include "mongodb-deployment.agentStartupOptions" . | trim | nindent 6 }}
+  {{- end }}
+  {{- $ext := ternary ((.Values.sharding | default dict).extAccess | default dict) ((.Values.replicaSet | default dict).extAccess | default dict) $sharded }}
+  {{- if eq ($ext.enabled | default false) true }}
+  externalAccess:
+    {{- include "mongodb-deployment.externalAccess" (dict "root" . "extAccess" $ext) | trim | nindent 4 }}
+  {{- end }}
   security:
     authentication:
       enabled: true
-      ignoreUnknownUsers: {{ .Values.auth.allowNoManagedUsers | default true }}
+      ignoreUnknownUsers: {{ ne (.Values.auth.allowNoManagedUsers | toString) "false" }}
       modes: 
       {{- if and (hasKey .Values.auth "scram") (hasKey .Values.auth.scram "enabled") (eq .Values.auth.scram.enabled true) }}
         - SCRAM
@@ -319,19 +231,22 @@ spec:
     certsSecretPrefix: "mdb"
     tls:
       ca: {{ .Values.tls.caConfigMap }}
-      {{- if and (hasKey .Values.sharding "extAccess") (hasKey .Values.sharding.extAccess "enabled") (eq .Values.sharding.extAccess.enabled true) (hasKey .Values.sharding.extAccess "externalDomains")}}
-      exposedExternally: true
-      additionalCertificateDomains: {{ .Values.sharding.extAccess.externalDomains }}
+      {{- with (include "mongodb-deployment.additionalCertificateDomains" . | fromYamlArray) }}
+      additionalCertificateDomains:{{ . | toYaml | trim | nindent 8 }}
       {{- end }}
     {{- end }}
+  {{- if hasKey .Values "backup" }}
   backup:
     mode: {{ .Values.backup.mode }}
     {{- if eq (.Values.backup.mode | lower) "enabled" }}
-    assignmentLabels: ""
-    {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled false) }}
+    {{- with .Values.backup.assignmentLabels }}
+    assignmentLabels:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- if not $sharded }}
     autoTerminateOnDeletion: {{ .Values.backup.autoTerminateOnDeletion }}
     {{- end }}
-    {{- if .Values.backup.encryption.kmip.enabled }}
+    {{- if (((.Values.backup.encryption | default dict).kmip | default dict).enabled) }}
     encryption:
       kmip:
         client:
@@ -347,8 +262,8 @@ spec:
       referenceHourOfDay: {{ .Values.backup.snapshotSchedule.referenceHourOfDay }}
       referenceMinuteOfHour: {{ .Values.backup.snapshotSchedule.referenceMinuteOfHour }}
       fullIncrementalDayOfWeek: {{ .Values.backup.snapshotSchedule.fullIncrementalDayOfWeek }}
-      {{- if and (hasKey .Values "sharding") (hasKey .Values.sharding "enabled") (eq .Values.sharding.enabled true) (and (lt .FeatureCompatibilityVersion "4.1")) }}
+      {{- if $sharded }}
       clusterCheckpointIntervalMin: {{ .Values.backup.snapshotSchedule.clusterCheckpointIntervalMin }}
       {{- end }}
-      {{- end }}
+    {{- end }}
   {{- end }}
